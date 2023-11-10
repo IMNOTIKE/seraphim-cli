@@ -10,4 +10,4 @@ tasks:
     command: |
       bashly completions --install
   - name: install gum
-    command: brew install gum
+    command: brew install gum &> /dev/null
