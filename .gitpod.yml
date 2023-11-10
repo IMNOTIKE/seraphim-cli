@@ -5,3 +5,11 @@ vscode:
     - "albert.tabout"
     - "pinage404.bash-extension-pack"
     - "timonwong.shellcheck"
+tasks:
+  - name: install bashly
+    command: |
+      "brew install brew-gem
+       brew gem install bashly
+       bashly completions --install"
+  - name: install gum
+    command: "brew install gum"
