@@ -8,6 +8,7 @@ vscode:
 tasks:
   - name: install bashly
     command: |
+      brew install bash
       brew install brew-gem
       brew gem install bashly
       bashly completions --install
