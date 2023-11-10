@@ -1,0 +1,7 @@
+vscode:
+  extensions:
+    - "github.github-vscode-theme"
+    - "equinusocio.vsc-material-theme-icons"
+    - "albert.tabout"
+    - "pinage404.bash-extension-pack"
+    - "timonwong.shellcheck"
