@@ -8,6 +8,46 @@ version: aplha_0.0.1
 
 commands:
 
+- name: db
+  alias: db
+  help: Export or import a specific database or specific tables
+  args:
+    - name: host
+      required: false
+      repeatable: false
+    - name: engine
+      repeatable: false
+      required: false
+    - name: database
+      required: false
+      repeatable: false
+  
+  commands:
+    - private: false
+      name: export
+      alias: ex
+      help: Export a specific database or tables
+      args:
+        - name: tables
+          required: false
+          repeatable: true
+    - private: false
+      name: import
+      alias: im
+      help: Import a specific database or tables
+      args:
+        - name: tables
+          required: false
+          repeatable: true
+
+  examples:
+  - seraphim dbe -u <user>
+  - seraphim dbe --user <user>
+  - seraphim dbe
+  - seraphim salute -u <user>
+  - seraphim salute --user <user>
+  - seraphim salute
+
 - name: salute
   alias: s
   help: Salute user
