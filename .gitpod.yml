@@ -6,8 +6,8 @@ vscode:
     - "pinage404.bash-extension-pack"
     - "timonwong.shellcheck"
 tasks:
-  - name: install bashly
+  - name: install urfave/cli with go
     command: |
-      bashly completions --install
-  - name: install gum
-    command: brew install gum &> /dev/null
+      go get github.com/urfave/cli/v2
+  - name: install bubbletea
+    command: go get github.com/charmbracelet/bubbletea
