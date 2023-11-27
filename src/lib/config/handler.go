@@ -24,7 +24,7 @@ type SeraphConfig struct {
 
 const CONFIG_PATH = "/.config/seraphim/settings.toml"
 
-func GetSerpahConfig() SeraphConfig {
+func GetSeraphConfig() SeraphConfig {
 	var homePath string
 	if v, err := os.UserHomeDir(); err == nil {
 		homePath = v
@@ -51,7 +51,7 @@ func GetSerpahConfig() SeraphConfig {
 
 func GetSeraphStore() (string, error) {
 	var message string
-	conf := GetSerpahConfig()
+	conf := GetSeraphConfig()
 	if conf == (SeraphConfig{}) {
 		message = "Couldn't get configs"
 		log.Fatal(message)

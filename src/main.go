@@ -1,6 +1,10 @@
 package main
 
-import "seraphim-cli/lib/store"
+import (
+	"fmt"
+	"log"
+	"seraphim-cli/lib/store"
+)
 
 // func main() {
 // 	app := cli.NewApp()
@@ -79,5 +83,12 @@ func main() {
 	// }
 
 	// Now you have connections to all your databases: postgresDB, mysqlDB, and sqliteDB
-	store.DoesStoreDBFileExist()
+	if stores, err := store.GetStoredDbConnections(); err != nil {
+		log.Fatal(err)
+	} else {
+		for i := 0; i < len(stores); i++ {
+			fmt.Println(stores[i])
+		}
+
+	}
 }
