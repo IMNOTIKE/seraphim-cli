@@ -1,61 +1,83 @@
 package main
 
-import (
-	"fmt"
-	"os"
+import "seraphim-cli/lib/store"
 
-	"github.com/charmbracelet/bubbles/progress"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/urfave/cli"
-)
+// func main() {
+// 	app := cli.NewApp()
+// 	app.Name = "Seraphim CLI tool"
+// 	app.Usage = "A simple CLI application containing all sorts of useful tools"
+
+// 	dbDumpFlags := []cli.Flag{
+// 		cli.BoolFlag{
+// 			Name: "host",
+// 			Usage: "Set the host of the database",
+// 			Required: true,
+// 		},
+// 	}
+
+// 	dbSubCommands := []cli.Command{
+// 		{
+// 			Name: "dump",
+// 			Aliases: []string{"d"},
+// 			Usage: "Create a dump from a database",
+// 			Category: "database",
+// 			Flags: dbDumpFlags,
+// 		},
+// 	}
+
+// 	app.Commands = []cli.Command{
+// 		{
+// 			Name:    "database",
+// 			Aliases: []string{"db"},
+// 			Usage:   "Database tool-belt",
+// 			Category: "database",
+// 			Subcommands: dbSubCommands,
+// 			Action:  runBubbleTea,
+// 		},
+// 	}
+
+// 	err := app.Run(os.Args)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
+// }
 
 func main() {
-	app := cli.NewApp()
-	app.Name = "Seraphim CLI tool"
-	app.Usage = "A simple CLI application containing all sorts of useful tools"
+	// postgresConfig := db.DatabaseConfig{
+	// 	Name:     "my_postgres_db",
+	// 	Host:     "localhost",
+	// 	Port:     5432,
+	// 	User:     "postgres",
+	// 	Password: "password",
+	// }
 
-	dbDumpFlags := []cli.Flag{
-		cli.BoolFlag{
-			Name: "host",
-			Usage: "Set the host of the database",
-			Required: true,
-		},
-	}
+	// mysqlConfig := db.DatabaseConfig{
+	// 	Name:     "my_mysql_db",
+	// 	Host:     "localhost",
+	// 	Port:     3306,
+	// 	User:     "root",
+	// 	Password: "password",
+	// }
 
-	dbSubCommands := []cli.Command{
-		{
-			Name: "dump",
-			Aliases: []string{"d"},
-			Usage: "Create a dump from a database",
-			Category: "database",
-			Flags: dbDumpFlags,
-		},
-	}
+	// sqliteConfig := db.DatabaseConfig{
+	// 	Name: "my_sqlite_db.db",
+	// }
 
-	app.Commands = []cli.Command{
-		{
-			Name:    "database",
-			Aliases: []string{"db"},
-			Usage:   "Database tool-belt",
-			Category: "database",
-			Subcommands: dbSubCommands,
-			Action:  runBubbleTea,
-		},
-	}
+	// postgresDB, err := db.ConnectToPostgreSQL(postgresConfig)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	err := app.Run(os.Args)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
+	// mysqlDB, err := db.ConnectToMySQL(mysqlConfig)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-func runBubbleTea(c *cli.Context) error {
-	p := progress.New()
+	// sqliteDB, err := db.ConnectToSQLite(sqliteConfig)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	program := tea.NewProgram(p)
-	if _, err := program.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	// Now you have connections to all your databases: postgresDB, mysqlDB, and sqliteDB
+	store.DoesStoreDBFileExist()
 }
