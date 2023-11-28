@@ -3,10 +3,10 @@ CLI ToolBelt
 
 ## Resources
 - GoLang
-  - Cobra (for commands and subcommands)
-  - Viper (for configuration)
-  - BubbleTea (for TUI)
-  - <X> (for SQL)
+ - Cobra (for commands and subcommands)
+ - Viper (for configuration)
+ - BubbleTea (for TUI)
+ - <X> (for SQL)
 
 ## Usefull commands
 Create new command using cobra
@@ -15,7 +15,7 @@ $ cobra-cli add <command name>
 ```
 Create new subcommand
 ```bash
-$> cobra-cli <subcommand name> -p <parent command name>
+$ cobra-cli <subcommand name> -p <parent command name>
 ```
 
 ## Basic structure
