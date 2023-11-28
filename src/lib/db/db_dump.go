@@ -15,7 +15,9 @@ import (
 type DbDumpModel struct {
 	Input   textinput.Model
 	Spinner spinner.Model
+	Err     error
 
+	// Add states for various operations
 	AvailableConnections      []config.StoredConnection
 	SelectedConnectionDetails config.StoredConnection
 	Database                  string
@@ -73,12 +75,17 @@ func (dbm DbDumpModel) View() string {
 	if dbm.Loading {
 		return fmt.Sprintf("%s Creating dump", dbm.Spinner.View())
 	}
+
+	if err := dbm.Err; err != nil {
+		return fmt.Sprintf("Sorry, could not fetch tables: \n%s", err)
+	}
+
 	return "Press Ctrl+C to Exit"
 }
 
 func (dbm DbDumpModel) FetchTableList() tea.Cmd {
 	return func() tea.Msg {
-		time.Sleep(2000)
+		time.Sleep(2 * time.Second)
 		return SelectSuccessMsg{
 			Err:       nil,
 			ResultSet: []string{},
