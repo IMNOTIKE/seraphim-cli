@@ -15,7 +15,8 @@ $ cobra-cli add <command name>
 ```
 Create new subcommand
 ```bash
-$ cobra-cli <subcommand name> -p <parent command name>
+$ cobra-cli <subcommand name> -p '<parent command name in lowercase>Cmd'
+$ #e.g. cobra-cli add sub -p 'parentCmd'
 ```
 
 ## Basic structure
