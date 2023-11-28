@@ -6,7 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"seraphim-cli/config"
+	"seraphim/config"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,7 +17,7 @@ var seraphimConfig config.SeraphimConfig
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "seraphim-cli",
+	Use:   "seraphim",
 	Short: "Modular and varied toolbelt",
 	Long: `Serpahim aims at providing the user with
 	several commands to make life easieer`,
@@ -61,7 +61,7 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".seraphim-cli" (without extension).
+		// Search config in home directory with name ".seraphim" (without extension).
 		viper.AddConfigPath(home + "/.config/seraphim")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("seraphim")

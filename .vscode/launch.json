@@ -17,7 +17,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/src",
-            "args": ["d", "-H", "localhost", "-U", "root", "-p", "3306", "-P", "\"~/Downloads\"" ,"-s"]
+            "args": ["database", "dump"]
         }
     ]
 }
