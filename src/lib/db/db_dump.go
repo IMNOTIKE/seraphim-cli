@@ -125,15 +125,15 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 	items := make([]list.Item, numItems)
 	delegateKeys := newDelegateKeyMap()
 	// FIX ONLY LAST ELEMENT SHOWING UP
+	var i int
 	for _, m := range config.StoredConnections {
-		var i int
 		for key, value := range m {
 			items[i] = listItem{
 				tag:  key,
 				host: value.Host,
 			}
-			i++
 		}
+		i++
 	}
 	delegate := newItemDelegate(delegateKeys)
 	StoredConnectionList := list.New(items, delegate, 0, 0)

@@ -11,10 +11,11 @@ import (
 
 // dumpCmd represents the dump command
 var dumpCmd = &cobra.Command{
-	Use:   "dump",
-	Short: "Create a database dump",
-	Long:  `Create a dump of the selected database`,
-	Args:  cobra.NoArgs,
+	Use:     "dump",
+	Aliases: []string{"dmp"},
+	Short:   "Create a database dump",
+	Long:    `Create a dump of the selected database`,
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		db.RunDumpCommand(&seraphimConfig)
 	},

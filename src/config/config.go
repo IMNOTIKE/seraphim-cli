@@ -12,8 +12,8 @@ type BrandingConfig struct {
 type StoredConnection struct {
 	Host           string `mapstructure:"host"`
 	User           string `mapstructure:"user"`
-	Port           int    `mapstructure:"por"`
-	Password       string `mapstructure:"password"`
+	Port           int    `mapstructure:"port"`
+	Password       string `mapstructure:"pwd"`
 	Provider       string `mapstructure:"provider"`
 	DefaltDatabase string `mapstructure:"default_database"`
 }
