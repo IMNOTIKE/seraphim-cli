@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"seraphim/config"
 
@@ -72,5 +73,28 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		viper.Unmarshal(&seraphimConfig)
+	}
+}
+
+func DeleteKeyFromConfig(key string) {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		home, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+
+		// Search config in home directory with name ".seraphim" (without extension).
+		viper.AddConfigPath(home + "/.config/seraphim")
+		viper.SetConfigType("yaml")
+		viper.SetConfigName("seraphim")
+	}
+
+	viper.AutomaticEnv() // read in environment variables that match
+
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatal("error")
 	}
 }
