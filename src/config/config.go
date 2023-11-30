@@ -26,6 +26,7 @@ type SeraphimConfig struct {
 	Stored_Connections []map[string]StoredConnection `mapstructure:"stored_connections"`
 }
 
+// SHOULD ASK FOR CONFIRMATION
 func RemoveStoredConnection(index int, keystoremove ...string) tea.Msg {
 
 	file := viper.ConfigFileUsed()
