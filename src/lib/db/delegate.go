@@ -1,6 +1,8 @@
 package db
 
 import (
+	"seraphim/config"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -25,9 +27,9 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 				return m.NewStatusMessage(statusMessageStyle("You chose " + title))
 
 			case key.Matches(msg, keys.remove):
-				// TODO: Should remove from config file
 				index := m.Index()
 				m.RemoveItem(index)
+				config.RemoveStoredConnection(index, title)
 				if len(m.Items()) == 0 {
 					keys.remove.SetEnabled(false)
 				}

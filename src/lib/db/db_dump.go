@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
 )
 
 type DbDumpModel struct {
@@ -121,12 +120,12 @@ func (dbm DbDumpModel) FetchTableList() tea.Cmd {
 }
 
 func RunDumpCommand(config *config.SeraphimConfig) {
-	numItems := len(config.StoredConnections)
+	numItems := len(config.Stored_Connections)
 	items := make([]list.Item, numItems)
 	delegateKeys := newDelegateKeyMap()
 	// FIX ONLY LAST ELEMENT SHOWING UP
 	var i int
-	for _, m := range config.StoredConnections {
+	for _, m := range config.Stored_Connections {
 		for key, value := range m {
 			items[i] = listItem{
 				tag:  key,
@@ -152,7 +151,7 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 
 	p := tea.NewProgram(initialModel, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		log.Info("Alas, there's been an error: %v", err)
+		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
 }

@@ -11,3 +11,6 @@ tasks:
       go get github.com/urfave/cli/v2
   - name: install bubbletea
     command: go get github.com/charmbracelet/bubbletea
+  - command: cd src/
+  - command: cls
+  

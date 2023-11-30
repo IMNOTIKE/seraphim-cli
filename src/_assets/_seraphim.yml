@@ -1,8 +1,6 @@
 version: alpha_v0.0.1
-
 branding:
   name: seraphim
-
 stored_connections:
   - test_local_mysql:
       host: localhost
@@ -11,7 +9,6 @@ stored_connections:
       port: 3306
       provider: mysql
       default_database: local
-  
   - test_local_postgres:
       host: localhost
       user: root

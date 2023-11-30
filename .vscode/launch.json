@@ -17,14 +17,8 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/src",
-            "args": ["database", "dump"],
-            "console": "internalConsole",
-            "presentation": {
-                "hidden": false,
-                "group": "Command-Specific",
-                "order": 1
-            },
-            "showLog": false
+            "args": ["db", "dmp"],
+            "console": "integratedTerminal"
         }
     ]
 }

@@ -2,7 +2,9 @@ package config
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/coreybutler/go-fsutil"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 type BrandingConfig struct {
@@ -19,15 +21,31 @@ type StoredConnection struct {
 }
 
 type SeraphimConfig struct {
-	Version           string                        `mapstructure:"version"`
-	BrandingConfig    BrandingConfig                `mapstructure:"branding"`
-	StoredConnections []map[string]StoredConnection `mapstructure:"stored_connections"`
+	Version            string                        `mapstructure:"version"`
+	Branding           BrandingConfig                `mapstructure:"branding"`
+	Stored_Connections []map[string]StoredConnection `mapstructure:"stored_connections"`
 }
 
-func RemoveStoredConnection(key string, index int, isInArray bool) tea.Msg {
-	if isInArray {
-		delete(viper.Get((key + "[" + string(index) + "]")).(map[string]interface{}), "key")
+func RemoveStoredConnection(index int, keystoremove ...string) tea.Msg {
+
+	file := viper.ConfigFileUsed()
+	var config SeraphimConfig
+	viper.Unmarshal(&config)
+
+	for _, key := range keystoremove {
+		delete(config.Stored_Connections[index], key)
 	}
-	delete(viper.Get(key).(map[string]interface{}), "key")
-	return tea.ExitAltScreen
+
+	if index != -1 {
+		config.Stored_Connections = append(config.Stored_Connections[:index], config.Stored_Connections[index+1:]...)
+	}
+
+	content, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	fsutil.WriteTextFile(file, string(content))
+
+	return "Removed config entry"
 }

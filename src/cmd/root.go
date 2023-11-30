@@ -15,6 +15,7 @@ import (
 
 var cfgFile string
 var seraphimConfig config.SeraphimConfig
+var versionRequested bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -23,10 +24,11 @@ var rootCmd = &cobra.Command{
 	Long: `Serpahim aims at providing the user with
 	several commands to make life easieer`,
 	Run: func(cmd *cobra.Command, args []string) {
-		version := seraphimConfig.Version
-		fmt.Println(version)
-		name := seraphimConfig.BrandingConfig.Name
-		fmt.Println(name)
+		fmt.Println("Thank you for using seraphim")
+		if versionRequested {
+			fmt.Printf("\u251C\u279D  App: %s\n", seraphimConfig.Branding.Name)
+			fmt.Printf("\u2514\u279D  Version: %s\n", seraphimConfig.Version)
+		}
 	},
 }
 
@@ -47,6 +49,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/seraphim/seraphim.yaml)")
+	rootCmd.Flags().BoolVarP(&versionRequested, "version", "v", false, "Application version")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 }
@@ -96,4 +99,5 @@ func DeleteKeyFromConfig(key string) {
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatal("error")
 	}
+
 }
