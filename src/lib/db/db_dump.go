@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"seraphim/config"
+	"seraphim/lib/bubble/selector"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -70,12 +71,14 @@ func (dbm DbDumpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			dbm.Choosing = false
 			dbm.Loading = true
 			// get selected stored connection
+
 			return dbm, tea.Batch(dbm.FetchTableList(config.StoredConnection{}), spinner.Tick)
 		}
 	case SelectSuccessMsg:
 		dbm.Loading = false
 		dbm.Choosing = true
-		return dbm, nil
+		dbm.Tables = msg.ResultSet
+		return dbm, tea.Quit
 	}
 
 	if dbm.Loading {
@@ -116,7 +119,7 @@ func (dbm DbDumpModel) FetchTableList(dbConfig config.StoredConnection) tea.Cmd 
 		dbm.Loading = false
 		return SelectSuccessMsg{
 			Err:       nil,
-			ResultSet: []string{},
+			ResultSet: []string{"test", "temp"},
 		}
 	}
 }
@@ -148,11 +151,21 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 		List:     StoredConnectionList,
 		Spinner:  s,
 		Choosing: true,
+		Tables:   nil,
 	}
 
 	p := tea.NewProgram(initialModel, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
+	model, err := p.Run()
+	if err != nil {
 		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
+	tables := model.(DbDumpModel).Tables
+	selectedDb := model.(DbDumpModel).SelectedConnectionDetails
+	if tables != nil {
+		selector.RunTableSelector(selectedDb, tables)
+	} else {
+		fmt.Println("Tables were not set")
+	}
+
 }
