@@ -69,7 +69,8 @@ func (dbm DbDumpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			dbm.Choosing = false
 			dbm.Loading = true
-			return dbm, tea.Batch(dbm.FetchTableList(), spinner.Tick)
+			// get selected stored connection
+			return dbm, tea.Batch(dbm.FetchTableList(config.StoredConnection{}), spinner.Tick)
 		}
 	case SelectSuccessMsg:
 		dbm.Loading = false
@@ -108,9 +109,11 @@ func (dbm DbDumpModel) View() string {
 	return "Press Ctrl+C to Exit"
 }
 
-func (dbm DbDumpModel) FetchTableList() tea.Cmd {
+func (dbm DbDumpModel) FetchTableList(dbConfig config.StoredConnection) tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(2 * time.Second)
+		dbm.Choosing = false
+		dbm.Loading = false
 		return SelectSuccessMsg{
 			Err:       nil,
 			ResultSet: []string{},
@@ -122,7 +125,6 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 	numItems := len(config.Stored_Connections)
 	items := make([]list.Item, numItems)
 	delegateKeys := newDelegateKeyMap()
-	// FIX ONLY LAST ELEMENT SHOWING UP
 	var i int
 	for _, m := range config.Stored_Connections {
 		for key, value := range m {

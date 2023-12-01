@@ -1,8 +1,11 @@
 package dialog
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"seraphim/config"
+	"slices"
+	"strconv"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,48 +18,99 @@ const (
 )
 
 type confirmationDialog struct {
-	input      textinput.Model
-	options    []string
-	title      string
-	interacted bool
-	confirmed  bool
+	input   textinput.Model
+	err     error
+	options string
 }
 
 func (cd confirmationDialog) Init() tea.Cmd {
 	return tea.Batch(textinput.Blink, tea.EnterAltScreen)
 }
 
+type (
+	errMsg error
+)
+
+var (
+	keyIndex     int
+	removeParams []string
+	question     string
+	notDeleted   error
+)
+
 func (cd confirmationDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return cd, nil
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyCtrlC:
+			notDeleted = errors.New("not deleted")
+			return cd, tea.Quit
+		case tea.KeyEnter:
+			if slices.Contains([]string{"y", "yes"}, cd.input.Value()) {
+				config.RemoveStoredConnection(keyIndex, removeParams...)
+				notDeleted = nil
+				return cd, tea.Quit
+			}
+			notDeleted = errors.New("not deleted")
+			return cd, tea.Quit
+		}
+	// We handle errors just like any other message
+	case errMsg:
+		cd.err = msg
+		notDeleted = msg
+		return cd, nil
+	}
+
+	cd.input, cmd = cd.input.Update(msg)
+	return cd, cmd
 }
 
 func (cd confirmationDialog) View() string {
-	return ""
+	return fmt.Sprintf(
+		question+"\n\n%s\n\n%s",
+		cd.input.View(),
+		"(ctrl+C to abort)",
+	) + "\n"
 }
 
-func RunDialog(dialogMessage string, useCase DialogUseCase, params ...any) {
+func RunDialog(dialogMessage string, useCase DialogUseCase, index int, params ...string) error {
 
-	switch useCase {
-	case DeleteStoredConnection:
-		//TODO
-
-	default:
-		// TODO
-	}
-
+	var initialModel confirmationDialog
+	keyIndex = index
+	removeParams = params
+	question = dialogMessage
 	i := textinput.New()
 	i.Focus()
-	initialModel := confirmationDialog{
-		input:      i,
-		options:    make([]string, 0),
-		title:      "",
-		interacted: false,
-		confirmed:  false,
+	switch useCase {
+	case DeleteStoredConnection:
+		i.CharLimit = 3
+		var valid bool
+		if len(params) < 1 {
+			return errors.New("expected params to be one or more, got " + strconv.Itoa(len(params)))
+		} else {
+			valid = true
+		}
+
+		if valid {
+			initialModel = confirmationDialog{
+				input:   i,
+				options: "y/yes or N/No",
+			}
+			i.Placeholder = initialModel.options
+			p := tea.NewProgram(initialModel, tea.WithAltScreen())
+			if _, err := p.Run(); err != nil {
+				fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
+				return err
+			}
+			return notDeleted
+		}
+	default:
+		err := errors.New("unknown dialog variant")
+		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
+		return err
 	}
 
-	p := tea.NewProgram(initialModel, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
-		os.Exit(1)
-	}
+	return errors.New("something went wrong while handling the operation")
 }

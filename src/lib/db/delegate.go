@@ -1,7 +1,6 @@
 package db
 
 import (
-	"seraphim/config"
 	"seraphim/lib/bubble/dialog"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -29,9 +28,10 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 
 			case key.Matches(msg, keys.remove):
 				index := m.Index()
-				m.RemoveItem(index)
-				config.RemoveStoredConnection(index, title)
-				dialog.RunDialog("Are you sure?", dialog.DeleteStoredConnection, index, title)
+				err := dialog.RunDialog("Are you sure? y/yes or N/No ", dialog.DeleteStoredConnection, index, title)
+				if err == nil {
+					m.RemoveItem(index)
+				}
 				if len(m.Items()) == 0 {
 					keys.remove.SetEnabled(false)
 				}
