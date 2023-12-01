@@ -1,6 +1,0 @@
-version = "v0.0.1"
-[branding]
-name = "seraphim"
-
-[store]
-STORE_DIR = "~/.config/seraphim/seraphim.db"

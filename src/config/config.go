@@ -1,6 +1,8 @@
 package config
 
 import (
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/coreybutler/go-fsutil"
 	"github.com/spf13/viper"
@@ -49,4 +51,26 @@ func RemoveStoredConnection(index int, keystoremove ...string) tea.Msg {
 	fsutil.WriteTextFile(file, string(content))
 
 	return "Removed config entry"
+}
+
+func AddConnection(newConn StoredConnection, tag string) tea.Msg {
+
+	file := viper.ConfigFileUsed()
+	var config SeraphimConfig
+	viper.Unmarshal(&config)
+	formattedTag := strings.Replace(strings.Trim(tag, " "), " ", "_", -1)
+	newConnMapped := make(map[string]StoredConnection)
+	newConnMapped[formattedTag] = newConn
+	updatedConnections := append(config.Stored_Connections, newConnMapped)
+
+	config.Stored_Connections = updatedConnections
+
+	content, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	fsutil.WriteTextFile(file, string(content))
+
+	return "Added new stored connection"
 }

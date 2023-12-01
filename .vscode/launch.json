@@ -19,6 +19,15 @@
             "program": "${workspaceFolder}/src",
             "args": ["db", "dmp"],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Launch Add Connection command",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/src",
+            "args": ["db", "ac"],
+            "console": "integratedTerminal"
         }
     ]
 }
