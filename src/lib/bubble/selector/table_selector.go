@@ -97,7 +97,7 @@ func (tbm TableSelectorMode) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (tbm TableSelectorMode) View() string {
 	if tbm.Choosing {
-		return fmt.Sprintf("Select a stored connection: \n%s", tbm.List.View())
+		return fmt.Sprintf("Select one ore more tables: \n%s", tbm.List.View())
 	}
 
 	if tbm.Loading {

@@ -5,7 +5,6 @@ import (
 	"os"
 	"seraphim/config"
 	"seraphim/lib/bubble/selector"
-	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -23,7 +22,6 @@ type DbDumpModel struct {
 	SelectedConnectionDetails config.StoredConnection
 	Database                  string
 	Choosing                  bool
-	Loading                   bool
 	Tables                    []string
 }
 
@@ -69,22 +67,14 @@ func (dbm DbDumpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return dbm, tea.Quit
 		case "enter":
 			dbm.Choosing = false
-			dbm.Loading = true
 			// get selected stored connection
 
 			return dbm, tea.Batch(dbm.FetchTableList(config.StoredConnection{}), spinner.Tick)
 		}
 	case SelectSuccessMsg:
-		dbm.Loading = false
 		dbm.Choosing = true
 		dbm.Tables = msg.ResultSet
 		return dbm, tea.Quit
-	}
-
-	if dbm.Loading {
-		var cmd tea.Cmd
-		dbm.Spinner, cmd = dbm.Spinner.Update(msg)
-		return dbm, cmd
 	}
 
 	if dbm.Choosing {
@@ -101,10 +91,6 @@ func (dbm DbDumpModel) View() string {
 		return fmt.Sprintf("Select a stored connection: \n%s", dbm.List.View())
 	}
 
-	if dbm.Loading {
-		return fmt.Sprintf("%s Creating dump", dbm.Spinner.View())
-	}
-
 	if err := dbm.Err; err != nil {
 		return fmt.Sprintf("Sorry, could not fetch tables: \n%s", err)
 	}
@@ -114,9 +100,7 @@ func (dbm DbDumpModel) View() string {
 
 func (dbm DbDumpModel) FetchTableList(dbConfig config.StoredConnection) tea.Cmd {
 	return func() tea.Msg {
-		time.Sleep(2 * time.Second)
 		dbm.Choosing = false
-		dbm.Loading = false
 		return SelectSuccessMsg{
 			Err:       nil,
 			ResultSet: []string{"test", "temp"},
