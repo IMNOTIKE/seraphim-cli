@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"seraphim/config"
+	"time"
 
 	"github.com/JamesStewy/go-mysqldump"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -79,7 +80,10 @@ func (m MultiSelectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.Typing {
 				res := CreateDump(conn, m.PathInput.Value(), selectedDb)
 				if res {
-					return m, tea.Quit
+					os.Exit(0)
+				} else {
+					fmt.Printf("Something went wrong")
+					os.Exit(1)
 				}
 			}
 			return m, func() tea.Msg {
@@ -170,9 +174,9 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDb st
 	dbname := selectedDb
 	driver := selected.Provider
 
-	dumpDir := dumpPath                                             // you should create this directory
-	dumpFilenameFormat := fmt.Sprintf("%s-20060102T150405", dbname) // accepts time layout string and add .sql at the end of file
-
+	dumpDir := dumpPath                                            // you should create this directory
+	dumpFilenameFormat := fmt.Sprintf("%s-%v", dbname, time.Now()) // accepts time layout string and add .sql at the end of file
+	// ADD default dump path to config file
 	switch driver {
 	case "mysql":
 		db, err := sql.Open(driver, fmt.Sprintf("%s:%s@tcp(%s:%v)/%s", username, password, hostname, port, dbname))
