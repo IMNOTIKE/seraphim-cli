@@ -23,16 +23,6 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 			switch {
 			case key.Matches(msg, keys.choose):
 				return m.NewStatusMessage(statusMessageStyle("You chose " + title))
-				/*
-					case key.Matches(msg, keys.remove):
-						index := m.Index()
-							m.RemoveItem(index)
-						}
-						if len(m.Items()) == 0 {
-							keys.remove.SetEnabled(false)
-						}
-						return m.NewStatusMessage(statusMessageStyle("Deleted " + title))
-				*/
 			}
 
 		}
@@ -84,9 +74,5 @@ func newDelegateKeyMap() *delegateKeyMap {
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "choose"),
 		),
-		// remove: key.NewBinding(
-		// 	key.WithKeys("x", "backspace"),
-		// 	key.WithHelp("x", "delete"),
-		// ),
 	}
 }

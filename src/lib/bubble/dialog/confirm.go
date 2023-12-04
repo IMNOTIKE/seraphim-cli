@@ -15,6 +15,7 @@ type DialogUseCase string
 
 const (
 	DeleteStoredConnection DialogUseCase = "deleteStoredLocation"
+	RequestUserInput       DialogUseCase = "requestUserInput"
 )
 
 type confirmationDialog struct {
@@ -75,7 +76,7 @@ func (cd confirmationDialog) View() string {
 	) + "\n"
 }
 
-func RunDialog(dialogMessage string, useCase DialogUseCase, index int, params ...string) error {
+func RunDialog(dialogMessage string, useCase DialogUseCase, index int, params ...string) (string, error) {
 
 	var initialModel confirmationDialog
 	keyIndex = index
@@ -88,7 +89,7 @@ func RunDialog(dialogMessage string, useCase DialogUseCase, index int, params ..
 		i.CharLimit = 3
 		var valid bool
 		if len(params) < 1 {
-			return errors.New("expected params to be one or more, got " + strconv.Itoa(len(params)))
+			return "", errors.New("expected params to be one or more, got " + strconv.Itoa(len(params)))
 		} else {
 			valid = true
 		}
@@ -102,15 +103,37 @@ func RunDialog(dialogMessage string, useCase DialogUseCase, index int, params ..
 			p := tea.NewProgram(initialModel, tea.WithAltScreen())
 			if _, err := p.Run(); err != nil {
 				fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
-				return err
+				return "", err
 			}
-			return notDeleted
+			return "", notDeleted
+		}
+	case RequestUserInput:
+		i.CharLimit = 20
+		var valid bool
+		if len(params) < 1 {
+			return "", errors.New("expected params to be one or more, got " + strconv.Itoa(len(params)))
+		} else {
+			valid = true
+		}
+
+		if valid {
+			initialModel = confirmationDialog{
+				input:   i,
+				options: "Insert the path for the dump or press ENTER to use $HOME",
+			}
+			i.Placeholder = initialModel.options
+			p := tea.NewProgram(initialModel, tea.WithAltScreen())
+			if _, err := p.Run(); err != nil {
+				fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
+				return "", err
+			}
+			return i.Value(), notDeleted
 		}
 	default:
 		err := errors.New("unknown dialog variant")
 		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
-		return err
+		return "", err
 	}
 
-	return errors.New("something went wrong while handling the operation")
+	return "", errors.New("something went wrong while handling the operation")
 }

@@ -8,6 +8,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+var tag string
+
 func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 
@@ -24,11 +26,12 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		case tea.KeyMsg:
 			switch {
 			case key.Matches(msg, keys.choose):
-				return m.NewStatusMessage(statusMessageStyle("You chose " + title))
+				tag = title
+				return m.NewStatusMessage(statusMessageStyle(title))
 
 			case key.Matches(msg, keys.remove):
 				index := m.Index()
-				err := dialog.RunDialog("Are you sure? y/yes or N/No ", dialog.DeleteStoredConnection, index, title)
+				_, err := dialog.RunDialog("Are you sure? y/yes or N/No ", dialog.DeleteStoredConnection, index, title)
 				if err == nil {
 					m.RemoveItem(index)
 				}
@@ -91,4 +94,8 @@ func newDelegateKeyMap() *delegateKeyMap {
 			key.WithHelp("x", "delete"),
 		),
 	}
+}
+
+func GetTag() string {
+	return tag
 }

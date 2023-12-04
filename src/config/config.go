@@ -17,9 +17,9 @@ type StoredConnection struct {
 	Host           string `mapstructure:"host"`
 	User           string `mapstructure:"user"`
 	Port           int    `mapstructure:"port"`
-	Password       string `mapstructure:"pwd"`
+	Password       string `mapstructure:"password"`
 	Provider       string `mapstructure:"provider"`
-	DefaltDatabase string `mapstructure:"default_database"`
+	DefaltDatabase string `mapstructure:"defaltdatabase"`
 }
 
 type SeraphimConfig struct {

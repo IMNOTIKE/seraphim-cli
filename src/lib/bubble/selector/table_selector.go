@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type TableSelectorMode struct {
@@ -36,28 +35,6 @@ type SelectSuccessMsg struct {
 	Saved bool
 }
 
-var (
-	appStyle = lipgloss.NewStyle().Padding(1, 2)
-
-	titleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFDF5")).
-			Background(lipgloss.Color("#25A065")).
-			Padding(0, 1)
-
-	statusMessageStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
-				Render
-)
-
-type listItem struct {
-	dbName    string
-	tableName string
-}
-
-func (i listItem) Title() string       { return i.dbName }
-func (i listItem) Description() string { return i.tableName }
-func (i listItem) FilterValue() string { return i.tableName }
-
 func (tbm TableSelectorMode) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -70,16 +47,10 @@ func (tbm TableSelectorMode) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			tbm.Choosing = false
 			tbm.Loading = true
-			// get selected stored connection
-
+			tbm.SelectedTables = []string{tbm.List.SelectedItem().(listItem).Title()}
 			return tbm, tea.Batch(tbm.CreateDump(), spinner.Tick)
 		}
-	case SelectSuccessMsg:
-		tbm.Loading = false
-		tbm.Choosing = true
-		return tbm, tea.Quit
 	}
-
 	if tbm.Loading {
 		var cmd tea.Cmd
 		tbm.Spinner, cmd = tbm.Spinner.Update(msg)
@@ -96,6 +67,7 @@ func (tbm TableSelectorMode) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (tbm TableSelectorMode) View() string {
+
 	if tbm.Choosing {
 		return fmt.Sprintf("Select one ore more tables: \n%s", tbm.List.View())
 	}
@@ -123,14 +95,15 @@ func (tbm TableSelectorMode) CreateDump() tea.Cmd {
 	}
 }
 
-func RunTableSelector(selectedDb config.StoredConnection, tables []string) {
+// TODO: Should allow for multi-select
+func RunTableSelector(db string, selectedDb config.StoredConnection, tables []string) []string {
 	numItems := len(tables)
 	items := make([]list.Item, numItems)
 	delegateKeys := newDelegateKeyMap()
 	for i, value := range tables {
 		items[i] = listItem{
-			dbName:    selectedDb.DefaltDatabase,
-			tableName: value,
+			title:       value,
+			description: db,
 		}
 	}
 
@@ -160,12 +133,9 @@ func RunTableSelector(selectedDb config.StoredConnection, tables []string) {
 
 	selectedTables := model.(TableSelectorMode).SelectedTables
 	if selectedTables != nil {
-		fmt.Println("Selected: ")
-		for _, v := range selectedTables {
-			fmt.Printf("%v\n", v)
-		}
+		return selectedTables
 	} else {
-		fmt.Println("No tables were selected")
+		return nil
 	}
 
 }

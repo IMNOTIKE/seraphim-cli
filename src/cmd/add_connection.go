@@ -29,14 +29,6 @@ to quickly create a Cobra application.`,
 		if r.Err != nil {
 			log.Fatal("something went wrong")
 		}
-		// fmt.Printf("Result: \nTag: %s\nHost: %s\nUser: %s\nPwd: %s\nPort: %d\nProvider: %s\nDefDb: %s\n",
-		// 	r.Tag,
-		// 	r.NewConnection.Host,
-		// 	r.NewConnection.User,
-		// 	r.NewConnection.Password,
-		// 	r.NewConnection.Port,
-		// 	r.NewConnection.Provider,
-		// 	r.NewConnection.DefaltDatabase)
 		if operationResult := config.AddConnection(r.NewConnection, r.Tag); reflect.ValueOf(operationResult).Kind().String() == reflect.ValueOf("").Kind().String() {
 			fmt.Printf("Success: \n%s\n", operationResult)
 		} else {

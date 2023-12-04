@@ -2,13 +2,16 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"seraphim/config"
 	"seraphim/lib/bubble/selector"
+	qh "seraphim/lib/db/query"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/textinput"
+	btea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -16,12 +19,14 @@ type DbDumpModel struct {
 	List         list.Model
 	DelegateKeys *delegateKeyMap
 	Spinner      spinner.Model
+	DbInput      textinput.Model
 	Err          error
 
 	AvailableConnections      []config.StoredConnection
 	SelectedConnectionDetails config.StoredConnection
 	Database                  string
 	Choosing                  bool
+	Selecting                 bool
 	Tables                    []string
 }
 
@@ -30,8 +35,8 @@ type SelectSuccessMsg struct {
 	ResultSet []string
 }
 
-func (dbm DbDumpModel) Init() tea.Cmd {
-	return tea.EnterAltScreen
+func (dbm DbDumpModel) Init() btea.Cmd {
+	return btea.EnterAltScreen
 }
 
 var (
@@ -45,41 +50,55 @@ var (
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
 				Render
+
+	seraphimConfig config.SeraphimConfig
 )
 
 type listItem struct {
 	tag  string
 	host string
+	user string
 }
 
 func (i listItem) Title() string       { return i.tag }
-func (i listItem) Description() string { return i.host }
+func (i listItem) Description() string { return i.user + "@" + i.host }
 func (i listItem) FilterValue() string { return i.tag }
 
-func (dbm DbDumpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
+	case btea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		dbm.List.SetSize(msg.Width-h, msg.Height-v)
-	case tea.KeyMsg:
+	case btea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			return dbm, tea.Quit
+			return dbm, btea.Quit
 		case "enter":
 			dbm.Choosing = false
-			// get selected stored connection
+			selectedItem := dbm.List.SelectedItem().(listItem)
+			var selectedConn config.StoredConnection
+			for _, conn := range seraphimConfig.Stored_Connections {
+				t := conn[selectedItem.tag]
+				selectedConn = t
 
-			return dbm, tea.Batch(dbm.FetchTableList(config.StoredConnection{}), spinner.Tick)
+			}
+			return dbm, btea.Batch(dbm.PerformDump(selectedConn), spinner.Tick)
 		}
 	case SelectSuccessMsg:
 		dbm.Choosing = true
 		dbm.Tables = msg.ResultSet
-		return dbm, tea.Quit
+		return dbm, btea.Quit
 	}
 
 	if dbm.Choosing {
-		var cmd tea.Cmd
+		var cmd btea.Cmd
 		dbm.List, cmd = dbm.List.Update(msg)
+		return dbm, cmd
+	}
+
+	if dbm.Selecting {
+		var cmd btea.Cmd
+		dbm.DbInput, cmd = dbm.DbInput.Update(msg)
 		return dbm, cmd
 	}
 
@@ -98,17 +117,29 @@ func (dbm DbDumpModel) View() string {
 	return "Press Ctrl+C to Exit"
 }
 
-func (dbm DbDumpModel) FetchTableList(dbConfig config.StoredConnection) tea.Cmd {
-	return func() tea.Msg {
+func (dbm DbDumpModel) PerformDump(dbConfig config.StoredConnection) btea.Cmd {
+	dbs := qh.FetchDbList(dbConfig)
+	selectDbResult := selector.RunDbSelector(dbConfig, dbs)
+	if selectDbResult.Err != nil {
+		log.Fatal(selectDbResult.Err.Error())
+	}
+	db := selectDbResult.Result[0]
+	tables := qh.FetchTablesForDb(db, dbConfig)
+	selectedTables := selector.RunTableSelector(db, dbConfig, tables)
+	fmt.Println(selectedTables)
+	// TODO: Should ask for dump path
+	// TODO: should pass selected tables to the next function
+	return func() btea.Msg {
 		dbm.Choosing = false
 		return SelectSuccessMsg{
 			Err:       nil,
-			ResultSet: []string{"test", "temp"},
+			ResultSet: tables,
 		}
 	}
 }
 
 func RunDumpCommand(config *config.SeraphimConfig) {
+	seraphimConfig = *config
 	numItems := len(config.Stored_Connections)
 	items := make([]list.Item, numItems)
 	delegateKeys := newDelegateKeyMap()
@@ -118,6 +149,7 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 			items[i] = listItem{
 				tag:  key,
 				host: value.Host,
+				user: value.User,
 			}
 		}
 		i++
@@ -138,18 +170,19 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 		Tables:   nil,
 	}
 
-	p := tea.NewProgram(initialModel, tea.WithAltScreen())
-	model, err := p.Run()
+	p := btea.NewProgram(initialModel, btea.WithAltScreen())
+	//model, err := p.Run()
+	_, err := p.Run()
 	if err != nil {
 		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-	tables := model.(DbDumpModel).Tables
-	selectedDb := model.(DbDumpModel).SelectedConnectionDetails
-	if tables != nil {
-		selector.RunTableSelector(selectedDb, tables)
-	} else {
-		fmt.Println("Tables were not set")
-	}
+	// tables := model.(DbDumpModel).Tables
+	// selectedDb := model.(DbDumpModel).SelectedConnectionDetails
+	// if tables != nil {
+	// 	selector.RunTableSelector(selectedDb, tables)
+	// } else {
+	// 	fmt.Println("Tables were not set")
+	// }
 
 }
