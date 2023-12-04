@@ -82,7 +82,8 @@ func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 				selectedConn = t
 
 			}
-			return dbm, btea.Batch(dbm.PerformDump(selectedConn), spinner.Tick)
+			dbm.PerformDump(selectedConn)
+			return dbm, nil
 		}
 	case SelectSuccessMsg:
 		dbm.Choosing = true
@@ -117,7 +118,7 @@ func (dbm DbDumpModel) View() string {
 	return "Press Ctrl+C to Exit"
 }
 
-func (dbm DbDumpModel) PerformDump(dbConfig config.StoredConnection) btea.Cmd {
+func (dbm DbDumpModel) PerformDump(dbConfig config.StoredConnection) {
 	dbs := qh.FetchDbList(dbConfig)
 	selectDbResult := selector.RunDbSelector(dbConfig, dbs)
 	if selectDbResult.Err != nil {
@@ -125,17 +126,7 @@ func (dbm DbDumpModel) PerformDump(dbConfig config.StoredConnection) btea.Cmd {
 	}
 	db := selectDbResult.Result[0]
 	tables := qh.FetchTablesForDb(db, dbConfig)
-	selectedTables := selector.RunMultiSelectList(tables)
-	fmt.Println(selectedTables)
-	// TODO: Should ask for dump path
-	// TODO: should pass selected tables to the next function
-	return func() btea.Msg {
-		dbm.Choosing = false
-		return SelectSuccessMsg{
-			Err:       nil,
-			ResultSet: tables,
-		}
-	}
+	selector.RunMultiSelectList(tables, dbConfig, db)
 }
 
 func RunDumpCommand(config *config.SeraphimConfig) {
