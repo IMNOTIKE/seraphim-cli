@@ -125,7 +125,7 @@ func (dbm DbDumpModel) PerformDump(dbConfig config.StoredConnection) btea.Cmd {
 	}
 	db := selectDbResult.Result[0]
 	tables := qh.FetchTablesForDb(db, dbConfig)
-	selectedTables := selector.RunTableSelector(db, dbConfig, tables)
+	selectedTables := selector.RunMultiSelectList(tables)
 	fmt.Println(selectedTables)
 	// TODO: Should ask for dump path
 	// TODO: should pass selected tables to the next function
