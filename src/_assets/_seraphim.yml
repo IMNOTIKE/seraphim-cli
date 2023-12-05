@@ -1,6 +1,7 @@
 version: alpha_v0.0.1
 branding:
   name: seraphim
+default_dump_path: /workspace
 stored_connections:
   - test_local_mysql:
       host: localhost

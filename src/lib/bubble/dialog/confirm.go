@@ -3,7 +3,7 @@ package dialog
 import (
 	"errors"
 	"fmt"
-	"seraphim/config"
+	"seraphim/lib/config"
 	"slices"
 	"strconv"
 
