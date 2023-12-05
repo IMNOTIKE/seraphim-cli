@@ -65,6 +65,12 @@ var (
 	listDelegate   list.DefaultDelegate
 )
 
+//------------------------------------------------//
+//
+//           List items declarations
+//
+//------------------------------------------------//
+
 type ConnListItem struct {
 	tag  string
 	host string
@@ -134,7 +140,7 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 	switch msg := msg.(type) {
 	case btea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
-		dbm.StoredConnectionsList.SetSize(msg.Width-h, msg.Height-v)
+		dbm.DatabasesList.SetSize(msg.Width-h, msg.Height-v)
 	case btea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -169,7 +175,7 @@ func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cm
 	switch msg := msg.(type) {
 	case btea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
-		dbm.StoredConnectionsList.SetSize(msg.Width-h, msg.Height-v)
+		dbm.TablesList.SetSize(msg.Width-h, msg.Height-v)
 	case btea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
