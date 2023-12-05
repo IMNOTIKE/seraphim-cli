@@ -167,6 +167,12 @@ func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 	if dbm.ChoosingConnection {
 		dbm.updateConnChosingView(msg)
 	}
+	if dbm.ChoosingDatabases {
+		dbm.updateDbChosingView(msg)
+	}
+	if dbm.ChoosingTables {
+		dbm.updateTableChosingView(msg)
+	}
 	return dbm, nil
 }
 

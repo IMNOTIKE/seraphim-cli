@@ -1,8 +1,6 @@
 package db
 
 import (
-	"seraphim/lib/bubble/dialog"
-
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -28,17 +26,6 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 			case key.Matches(msg, keys.choose):
 				tag = title
 				return m.NewStatusMessage(statusMessageStyle(title))
-
-			case key.Matches(msg, keys.remove):
-				index := m.Index()
-				_, err := dialog.RunDialog("Are you sure? y/yes or N/No ", dialog.DeleteStoredConnection, index, title)
-				if err == nil {
-					m.RemoveItem(index)
-				}
-				if len(m.Items()) == 0 {
-					keys.remove.SetEnabled(false)
-				}
-				return m.NewStatusMessage(statusMessageStyle("Deleted " + title))
 			}
 		}
 
@@ -88,10 +75,6 @@ func newDelegateKeyMap() *delegateKeyMap {
 		choose: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "choose"),
-		),
-		remove: key.NewBinding(
-			key.WithKeys("x", "backspace"),
-			key.WithHelp("x", "delete"),
 		),
 	}
 }
