@@ -62,6 +62,7 @@ var (
 				Render
 
 	seraphimConfig config.SeraphimConfig
+	listDelegate   list.DefaultDelegate
 )
 
 type ConnListItem struct {
@@ -70,25 +71,25 @@ type ConnListItem struct {
 	user string
 }
 
-func (i ConnListItem) Title() string       { return i.tag }
-func (i ConnListItem) Description() string { return i.user + "@" + i.host }
-func (i ConnListItem) FilterValue() string { return i.tag }
+func (c ConnListItem) Title() string       { return c.tag }
+func (c ConnListItem) Description() string { return c.user + "@" + c.host }
+func (c ConnListItem) FilterValue() string { return c.tag }
 
 type DbListItem struct {
 	name string
 }
 
-func (i DbListItem) Title() string       { return i.name }
-func (i DbListItem) Description() string { return "" }
-func (i DbListItem) FilterValue() string { return i.name }
+func (d DbListItem) Title() string       { return d.name }
+func (d DbListItem) Description() string { return d.name }
+func (d DbListItem) FilterValue() string { return d.name }
 
 type TableListItem struct {
 	name string
 }
 
-func (i TableListItem) Title() string       { return i.name }
-func (i TableListItem) Description() string { return "" }
-func (i TableListItem) FilterValue() string { return i.name }
+func (t TableListItem) Title() string       { return t.name }
+func (t TableListItem) Description() string { return t.name }
+func (t TableListItem) FilterValue() string { return t.name }
 
 func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
 
@@ -109,18 +110,24 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 				break
 			}
 			dbs := qh.FetchDbList(dbm.SelectedConnectionDetails)
-			var dbsListItems []list.Item
-			for _, db := range dbs {
-				dbsListItems = append(dbsListItems, DbListItem{
+			dbsListItems := make([]list.Item, len(dbs))
+			for i, db := range dbs {
+				dbsListItems[i] = DbListItem{
 					name: db,
-				})
+				}
 			}
-			dbm.DatabasesList.SetItems(dbsListItems)
+			DatabasesList := list.New(dbsListItems, listDelegate, 0, 0)
+			DatabasesList.SetShowFilter(true)
+			DatabasesList.SetShowTitle(false)
+			DatabasesList.Styles.Title = titleStyle
+			dbm.DatabasesList = DatabasesList
 			dbm.ChoosingDatabases = true
-			return dbm, nil
+			return dbm, btea.ClearScreen
 		}
 	}
-	return dbm, nil
+	var cmd btea.Cmd
+	dbm.StoredConnectionsList, cmd = dbm.StoredConnectionsList.Update(msg)
+	return dbm, cmd
 }
 
 func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
@@ -132,21 +139,30 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return dbm, btea.Quit
+		case "backspace":
+			dbm.ChoosingConnection = true
+			dbm.ChoosingDatabases = false
 		case "enter":
-			dbm.ChoosingConnection = false
+			dbm.ChoosingDatabases = false
 			tables := qh.FetchTablesForDb("", dbm.SelectedConnectionDetails)
-			var tableListItems []list.Item
-			for _, table := range tables {
-				tableListItems = append(tableListItems, DbListItem{
+			tableListItems := make([]list.Item, len(tables))
+			for i, table := range tables {
+				tableListItems[i] = TableListItem{
 					name: table,
-				})
+				}
 			}
-			dbm.TablesList.SetItems(tableListItems)
-			dbm.ChoosingDatabases = true
-			return dbm, nil
+			TablesList := list.New(tableListItems, listDelegate, 0, 0)
+			TablesList.SetShowFilter(true)
+			TablesList.SetShowTitle(false)
+			TablesList.Styles.Title = titleStyle
+			dbm.TablesList = TablesList
+			dbm.ChoosingTables = true
+			return dbm, btea.ClearScreen
 		}
 	}
-	return dbm, nil
+	var cmd btea.Cmd
+	dbm.DatabasesList, cmd = dbm.DatabasesList.Update(msg)
+	return dbm, cmd
 }
 
 func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
@@ -158,13 +174,18 @@ func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cm
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return dbm, btea.Quit
+		case "backspace":
+			dbm.ChoosingDatabases = true
+			dbm.ChoosingTables = false
 		case "enter":
 			dbm.ChoosingTables = false
 			dbm.TypingPath = true
-			return dbm, nil
+			return dbm, btea.ClearScreen
 		}
 	}
-	return dbm, nil
+	var cmd btea.Cmd
+	dbm.TablesList, cmd = dbm.TablesList.Update(msg)
+	return dbm, cmd
 }
 
 func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
@@ -179,24 +200,6 @@ func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 		return dbm.updateTableChosingView(msg)
 	}
 
-	if dbm.ChoosingConnection {
-		var cmd btea.Cmd
-		dbm.StoredConnectionsList, cmd = dbm.StoredConnectionsList.Update(msg)
-		return dbm, cmd
-	}
-
-	if dbm.ChoosingDatabases {
-		var cmd btea.Cmd
-		dbm.DatabasesList, cmd = dbm.DatabasesList.Update(msg)
-		return dbm, cmd
-	}
-
-	if dbm.ChoosingTables {
-		var cmd btea.Cmd
-		dbm.TablesList, cmd = dbm.TablesList.Update(msg)
-		return dbm, cmd
-	}
-
 	if dbm.TypingPath {
 		var cmd btea.Cmd
 		dbm.DumpPathInput, cmd = dbm.DumpPathInput.Update(msg)
@@ -208,6 +211,7 @@ func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 }
 
 func (dbm DbDumpModel) View() string {
+
 	if dbm.ChoosingConnection {
 		return fmt.Sprintf("Select a stored connection: \n%s", dbm.StoredConnectionsList.View())
 	}
@@ -234,8 +238,8 @@ func (dbm DbDumpModel) View() string {
 func RunDumpCommand(config *config.SeraphimConfig) {
 	seraphimConfig = *config
 	numItems := len(config.Stored_Connections)
-	items := make([]list.Item, numItems)
 	delegateKeys := newDelegateKeyMap()
+	items := make([]list.Item, numItems)
 	var i int
 	for _, m := range config.Stored_Connections {
 		for key, value := range m {
@@ -248,21 +252,18 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 		i++
 	}
 	delegate := newItemDelegate(delegateKeys)
+	listDelegate = delegate
+
 	StoredConnectionList := list.New(items, delegate, 0, 0)
 	StoredConnectionList.SetShowFilter(true)
 	StoredConnectionList.SetShowTitle(false)
 	StoredConnectionList.Styles.Title = titleStyle
-
-	DatabasesList := list.New([]list.Item{}, delegate, 0, 0)
-	TablesList := list.New([]list.Item{}, delegate, 0, 0)
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 
 	initialModel := DbDumpModel{
 		StoredConnectionsList: StoredConnectionList,
-		DatabasesList:         DatabasesList,
-		TablesList:            TablesList,
 		Spinner:               s,
 		ChoosingConnection:    true,
 	}
