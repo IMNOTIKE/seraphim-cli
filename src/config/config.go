@@ -26,6 +26,7 @@ type SeraphimConfig struct {
 	Version            string                        `mapstructure:"version"`
 	Branding           BrandingConfig                `mapstructure:"branding"`
 	Stored_Connections []map[string]StoredConnection `mapstructure:"stored_connections"`
+	Default_dump_path  string                        `mapstructure:"default_dump_path"`
 }
 
 // SHOULD ASK FOR CONFIRMATION

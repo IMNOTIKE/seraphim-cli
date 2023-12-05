@@ -82,7 +82,7 @@ func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 				selectedConn = t
 
 			}
-			dbm.PerformDump(selectedConn)
+			dbm.PerformDump(selectedConn, seraphimConfig.Default_dump_path)
 			return dbm, nil
 		}
 	case SelectSuccessMsg:
@@ -118,7 +118,7 @@ func (dbm DbDumpModel) View() string {
 	return "Press Ctrl+C to Exit"
 }
 
-func (dbm DbDumpModel) PerformDump(dbConfig config.StoredConnection) {
+func (dbm DbDumpModel) PerformDump(dbConfig config.StoredConnection, defDmpPath string) {
 	dbs := qh.FetchDbList(dbConfig)
 	selectDbResult := selector.RunDbSelector(dbConfig, dbs)
 	if selectDbResult.Err != nil {
@@ -126,7 +126,7 @@ func (dbm DbDumpModel) PerformDump(dbConfig config.StoredConnection) {
 	}
 	db := selectDbResult.Result[0]
 	tables := qh.FetchTablesForDb(db, dbConfig)
-	selector.RunMultiSelectList(tables, dbConfig, db)
+	selector.RunMultiSelectList(tables, dbConfig, db, defDmpPath)
 }
 
 func RunDumpCommand(config *config.SeraphimConfig) {
@@ -162,18 +162,10 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 	}
 
 	p := btea.NewProgram(initialModel, btea.WithAltScreen())
-	//model, err := p.Run()
 	_, err := p.Run()
 	if err != nil {
 		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-	// tables := model.(DbDumpModel).Tables
-	// selectedDb := model.(DbDumpModel).SelectedConnectionDetails
-	// if tables != nil {
-	// 	selector.RunTableSelector(selectedDb, tables)
-	// } else {
-	// 	fmt.Println("Tables were not set")
-	// }
 
 }

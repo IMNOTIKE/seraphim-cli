@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"seraphim/config"
 	"time"
 
@@ -15,9 +17,10 @@ import (
 )
 
 var (
-	selected   []string
-	conn       config.StoredConnection
-	selectedDb string
+	selected        []string
+	conn            config.StoredConnection
+	defaultDumpPath string
+	selectedDb      string
 )
 
 type MultiSelectListModel struct {
@@ -26,14 +29,9 @@ type MultiSelectListModel struct {
 	Typing bool
 	Done   bool
 
-	Choices  []string       // items on the to-do list
-	Cursor   int            // which to-do list item our Cursor is pointing at
-	Selected map[int]string // which to-do items are Selected
-}
-
-func (m MultiSelectListModel) Init() tea.Cmd {
-	// Just return `nil`, which means "no I/O right now, please."
-	return textinput.Blink
+	Choices  []string
+	Cursor   int
+	Selected map[int]string
 }
 
 type MultiSelectResult struct {
@@ -41,33 +39,40 @@ type MultiSelectResult struct {
 	Result map[int]string
 }
 
+func (m MultiSelectListModel) Init() tea.Cmd {
+	return textinput.Blink
+}
+
+func ClearScreen() {
+
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("cmd", "/c", "cls") // for Windows
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	} else {
+		cmd := exec.Command("clear") // for Linux and MacOS
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+
+	}
+}
+
 func (m MultiSelectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	// Is it a key press?
 	case tea.KeyMsg:
-
-		// Cool, what was the actual key pressed?
 		switch msg.String() {
-
-		// These keys should exit the program.
 		case "ctrl+c":
-			return m, tea.Quit
-
-		// The "up" keys move the Cursor up
+			ClearScreen()
+			os.Exit(0)
 		case "up":
 			if m.Cursor > 0 {
 				m.Cursor--
 			}
-
-		// The "down" keys move the Cursor down
 		case "down":
 			if m.Cursor < len(m.Choices)-1 {
 				m.Cursor++
 			}
-
-		// The "enter" key and the spacebar (a literal space) toggle
-		// the Selected state for the item that the Cursor is pointing at.
 		case " ":
 			_, ok := m.Selected[m.Cursor]
 			if ok {
@@ -78,11 +83,19 @@ func (m MultiSelectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			if m.Typing {
-				res := CreateDump(conn, m.PathInput.Value(), selectedDb)
+				var path string
+				if m.PathInput.Value() != "" {
+					path = m.PathInput.Value()
+				} else {
+					path = defaultDumpPath
+				}
+				res := CreateDump(conn, path, selectedDb)
 				if res {
+					ClearScreen()
 					os.Exit(0)
 				} else {
 					fmt.Printf("Something went wrong")
+					ClearScreen()
 					os.Exit(1)
 				}
 			}
@@ -107,31 +120,22 @@ func (m MultiSelectListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.PathInput, cmd = m.PathInput.Update(msg)
 		return m, cmd
 	}
-	// Return the updated model to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
 	return m, nil
 }
 
 func (m MultiSelectListModel) View() string {
-	// The header
-	s := "What should we buy at the market?\n\n"
-
-	// Iterate over our Choices
+	s := "Select the desired tables: \n\n"
 	for i, choice := range m.Choices {
-
-		// Is the cursor pointing at this choice?
 		cursor := " " // no cursor
 		if m.Cursor == i {
-			cursor = ">" // cursor!
+			cursor = "\u27A4" // cursor!
 		}
 
-		// Is this choice selected?
 		checked := " " // not selected
 		if _, ok := m.Selected[i]; ok {
-			checked = "x" // selected!
+			checked = "\u2714" // selected!
 		}
 
-		// Render the row
 		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
 	}
 	qs := "\nPress CTRL+C to quit.\n"
@@ -140,16 +144,14 @@ func (m MultiSelectListModel) View() string {
 		m.PathInput.Focus()
 		return fmt.Sprintf("Enter the path for the database dump:\n\n  %s\n\nPress CTRL+C to quit", m.PathInput.View())
 	}
-	// The footer
-
-	// Send the UI for rendering
 	return s
 }
 
-func RunMultiSelectList(tables []string, dbConfig config.StoredConnection, db string) {
+func RunMultiSelectList(tables []string, dbConfig config.StoredConnection, db string, defaultDmpPath string) {
 
 	conn = dbConfig
 	selectedDb = db
+	defaultDumpPath = defaultDmpPath
 
 	t := textinput.New()
 	t.Focus()
@@ -174,9 +176,8 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDb st
 	dbname := selectedDb
 	driver := selected.Provider
 
-	dumpDir := dumpPath                                            // you should create this directory
-	dumpFilenameFormat := fmt.Sprintf("%s-%v", dbname, time.Now()) // accepts time layout string and add .sql at the end of file
-	// ADD default dump path to config file
+	dumpDir := dumpPath
+	dumpFilenameFormat := fmt.Sprintf("%s-%v", dbname, time.Now().Unix())
 	switch driver {
 	case "mysql":
 		db, err := sql.Open(driver, fmt.Sprintf("%s:%s@tcp(%s:%v)/%s", username, password, hostname, port, dbname))
@@ -185,22 +186,16 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDb st
 			return false
 		}
 
-		// Register database with mysqldump
 		dumper, err := mysqldump.Register(db, dumpDir, dumpFilenameFormat)
 		if err != nil {
 			fmt.Println("Error registering databse:", err)
 			return false
 		}
 
-		// Dump database to file
-		resultFilename, err := dumper.Dump()
-		if err != nil {
+		if _, err := dumper.Dump(); err != nil {
 			fmt.Println("Error dumping:", err)
 			return false
 		}
-		fmt.Printf("File is saved to %s", resultFilename)
-
-		// Close dumper and connected database
 		dumper.Close()
 	case "postgres":
 		dump, _ := pgcommands.NewDump(&pgcommands.Postgres{
@@ -219,7 +214,7 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDb st
 		} else {
 			fmt.Println("Dump success")
 			fmt.Println(dumpExec.Output)
-			return false
+			return true
 		}
 	default:
 		log.Fatal("Unknown driver")
