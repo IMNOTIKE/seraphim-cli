@@ -80,7 +80,7 @@ type DbListItem struct {
 }
 
 func (d DbListItem) Title() string       { return d.name }
-func (d DbListItem) Description() string { return d.name }
+func (d DbListItem) Description() string { return "" }
 func (d DbListItem) FilterValue() string { return d.name }
 
 type TableListItem struct {
@@ -88,7 +88,7 @@ type TableListItem struct {
 }
 
 func (t TableListItem) Title() string       { return t.name }
-func (t TableListItem) Description() string { return t.name }
+func (t TableListItem) Description() string { return "" }
 func (t TableListItem) FilterValue() string { return t.name }
 
 func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
