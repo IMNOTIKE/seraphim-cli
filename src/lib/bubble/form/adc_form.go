@@ -3,7 +3,7 @@ package form
 import (
 	"errors"
 	"fmt"
-	"seraphim/config"
+	"seraphim/lib/config"
 	"strconv"
 	"strings"
 

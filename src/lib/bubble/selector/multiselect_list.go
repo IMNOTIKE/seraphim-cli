@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"seraphim/config"
+	"seraphim/lib/config"
 	"time"
 
 	"github.com/JamesStewy/go-mysqldump"

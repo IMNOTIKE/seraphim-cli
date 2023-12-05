@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"seraphim/config"
+	"seraphim/lib/config"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"

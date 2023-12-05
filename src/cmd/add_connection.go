@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"seraphim/config"
 	"seraphim/lib/bubble/form"
+	"seraphim/lib/config"
 
 	"github.com/spf13/cobra"
 )

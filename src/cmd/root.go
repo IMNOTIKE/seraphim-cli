@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"seraphim/config"
+	"seraphim/lib/config"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

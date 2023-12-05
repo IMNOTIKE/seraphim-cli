@@ -3,7 +3,7 @@ package selector
 import (
 	"fmt"
 	"os"
-	"seraphim/config"
+	"seraphim/lib/config"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"

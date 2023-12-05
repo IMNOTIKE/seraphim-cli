@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"seraphim/config"
+	"seraphim/lib/config"
 
 	_ "github.com/go-sql-driver/mysql"
 )
