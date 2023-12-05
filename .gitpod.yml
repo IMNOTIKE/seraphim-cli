@@ -7,13 +7,12 @@ vscode:
     - "catppuccin.catppuccin-vsc"
     - "catppuccin.catppuccin-vsc-icons"
 
+    - "formulahendry.code-runner"
+    - "catppuccin.catppuccin-vsc"
+    - "catppuccin.catppuccin-vsc-icons"
+
 tasks:
-  - init: |
-      export EDITOR="command gp open -w" VISUAL="command gp open -w"
-      cp -f /workspace/ohmyzsh/templates/zshrc.zsh-template ~/.zshrc
-      ln -sf /workspace/ohmyzsh ~/.oh-my-zsh
-    command: exec zsh
-  - command: cd src/
+  - command: go install github.com/spf13/cobra-cli@latest
   - command: go install
   - command: cls
   
