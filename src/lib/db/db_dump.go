@@ -38,11 +38,13 @@ type DbDumpModel struct {
 	SelectedConnectionDetails config.StoredConnection
 	SelectedDatabases         []string
 	SelectedTables            []string
+	InputDumpPathValue        string
 	ChoosingConnection        bool
 	ChoosingDatabases         bool
 	ChoosingTables            bool
 	TypingPath                bool
 	Done                      bool
+	End                       bool
 }
 
 func (dbm DbDumpModel) Init() btea.Cmd {
@@ -63,6 +65,11 @@ var (
 
 	seraphimConfig config.SeraphimConfig
 	listDelegate   list.DefaultDelegate
+
+	pathInputTitleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("230"))
+	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	cursorStyle         = focusedStyle.Copy()
 )
 
 //------------------------------------------------//
@@ -82,20 +89,23 @@ func (c ConnListItem) Description() string { return c.user + "@" + c.host }
 func (c ConnListItem) FilterValue() string { return c.tag }
 
 type DbListItem struct {
-	name string
+	Name     string
+	Selected bool
 }
 
-func (d DbListItem) Title() string       { return d.name }
+func (d DbListItem) Title() string       { return d.Name }
 func (d DbListItem) Description() string { return "" }
-func (d DbListItem) FilterValue() string { return d.name }
+func (d DbListItem) FilterValue() string { return d.Name }
 
 type TableListItem struct {
-	name string
+	Name     string
+	Db       string
+	Selected bool
 }
 
-func (t TableListItem) Title() string       { return t.name }
-func (t TableListItem) Description() string { return "" }
-func (t TableListItem) FilterValue() string { return t.name }
+func (t TableListItem) Title() string       { return t.Name }
+func (t TableListItem) Description() string { return t.Db }
+func (t TableListItem) FilterValue() string { return t.Name }
 
 func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
 
@@ -112,14 +122,16 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 			selectedItem := dbm.StoredConnectionsList.SelectedItem().(ConnListItem)
 			for _, conn := range seraphimConfig.Stored_Connections {
 				t := conn[selectedItem.tag]
-				dbm.SelectedConnectionDetails = t
-				break
+				if t != (config.StoredConnection{}) {
+					dbm.SelectedConnectionDetails = t
+					break
+				}
 			}
 			dbs := qh.FetchDbList(dbm.SelectedConnectionDetails)
 			dbsListItems := make([]list.Item, len(dbs))
 			for i, db := range dbs {
 				dbsListItems[i] = DbListItem{
-					name: db,
+					Name: db,
 				}
 			}
 			DatabasesList := list.New(dbsListItems, listDelegate, 0, 0)
@@ -128,7 +140,12 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 			DatabasesList.Styles.Title = titleStyle
 			dbm.DatabasesList = DatabasesList
 			dbm.ChoosingDatabases = true
-			return dbm, btea.ClearScreen
+			return dbm, func() btea.Msg {
+				return btea.WindowSizeMsg{
+					Height: dbm.StoredConnectionsList.Height(),
+					Width:  dbm.StoredConnectionsList.Width(),
+				}
+			}
 		}
 	}
 	var cmd btea.Cmd
@@ -139,8 +156,7 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
 	switch msg := msg.(type) {
 	case btea.WindowSizeMsg:
-		h, v := appStyle.GetFrameSize()
-		dbm.DatabasesList.SetSize(msg.Width-h, msg.Height-v)
+		dbm.DatabasesList.SetSize(msg.Width, msg.Height)
 	case btea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -148,13 +164,18 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 		case "backspace":
 			dbm.ChoosingConnection = true
 			dbm.ChoosingDatabases = false
+		case " ":
+			// Handle multiple selection
 		case "enter":
 			dbm.ChoosingDatabases = false
-			tables := qh.FetchTablesForDb("", dbm.SelectedConnectionDetails)
+			selectedItem := dbm.DatabasesList.SelectedItem().(DbListItem)
+			dbm.SelectedDatabases = []string{selectedItem.Name}
+			// Should fetch tables for all selected dbs
+			tables := qh.FetchTablesForDb(selectedItem.Name, dbm.SelectedConnectionDetails)
 			tableListItems := make([]list.Item, len(tables))
 			for i, table := range tables {
 				tableListItems[i] = TableListItem{
-					name: table,
+					Name: table,
 				}
 			}
 			TablesList := list.New(tableListItems, listDelegate, 0, 0)
@@ -163,7 +184,12 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 			TablesList.Styles.Title = titleStyle
 			dbm.TablesList = TablesList
 			dbm.ChoosingTables = true
-			return dbm, btea.ClearScreen
+			return dbm, func() btea.Msg {
+				return btea.WindowSizeMsg{
+					Height: dbm.DatabasesList.Height(),
+					Width:  dbm.DatabasesList.Width(),
+				}
+			}
 		}
 	}
 	var cmd btea.Cmd
@@ -174,23 +200,55 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
 	switch msg := msg.(type) {
 	case btea.WindowSizeMsg:
-		h, v := appStyle.GetFrameSize()
-		dbm.TablesList.SetSize(msg.Width-h, msg.Height-v)
+		dbm.TablesList.SetSize(msg.Width, msg.Height)
 	case btea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return dbm, btea.Quit
+		case " ":
+			// Handle multiple selection
 		case "backspace":
 			dbm.ChoosingDatabases = true
 			dbm.ChoosingTables = false
 		case "enter":
 			dbm.ChoosingTables = false
+			selectedTable := dbm.TablesList.SelectedItem().(TableListItem)
+			dbm.SelectedTables = []string{selectedTable.Name}
 			dbm.TypingPath = true
-			return dbm, btea.ClearScreen
+			return dbm, nil
 		}
 	}
 	var cmd btea.Cmd
 	dbm.TablesList, cmd = dbm.TablesList.Update(msg)
+	return dbm, cmd
+}
+
+func (dbm DbDumpModel) updatePathInputView(msg btea.Msg) (btea.Model, btea.Cmd) {
+	switch msg := msg.(type) {
+	case btea.WindowSizeMsg:
+		h, v := appStyle.GetFrameSize()
+		dbm.TablesList.SetSize(msg.Width-h, msg.Height-v)
+	case btea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c":
+			return dbm, btea.Quit
+		case "alt+backspace":
+			dbm.ChoosingTables = true
+			dbm.TypingPath = false
+		case "enter":
+			dbm.TypingPath = false
+			inputPath := dbm.DumpPathInput.Value()
+			if inputPath == "" {
+				inputPath = seraphimConfig.Default_dump_path
+			}
+			dbm.InputDumpPathValue = inputPath
+			dbm.Done = true
+			return dbm, nil
+		}
+	}
+	var cmd btea.Cmd
+	dbm.DumpPathInput.Focus()
+	dbm.DumpPathInput, cmd = dbm.DumpPathInput.Update(msg)
 	return dbm, cmd
 }
 
@@ -207,10 +265,13 @@ func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 	}
 
 	if dbm.TypingPath {
-		var cmd btea.Cmd
-		dbm.DumpPathInput, cmd = dbm.DumpPathInput.Update(msg)
-		dbm.DumpPathInput.Focus()
-		return dbm, cmd
+		return dbm.updatePathInputView(msg)
+	}
+
+	if dbm.Done {
+		qh.CreateDump(dbm.SelectedConnectionDetails, dbm.InputDumpPathValue, dbm.SelectedDatabases[0])
+		dbm.Done = false
+		return dbm, btea.Quit
 	}
 
 	return dbm, nil
@@ -223,15 +284,17 @@ func (dbm DbDumpModel) View() string {
 	}
 
 	if dbm.ChoosingDatabases {
+		// Handle selection view
 		return fmt.Sprintf("Select a one or more databases: \n%s", dbm.DatabasesList.View())
 	}
 
 	if dbm.ChoosingTables {
+		// Handle selection view
 		return fmt.Sprintf("Select a one or more tables: \n%s", dbm.TablesList.View())
 	}
 
 	if dbm.TypingPath {
-		return fmt.Sprintf("Select a one or more tables: \n%s", dbm.DumpPathInput.View())
+		return fmt.Sprintf(pathInputTitleStyle.Render("Select a one or more tables:")+" \n\n%s\n\n"+blurredStyle.Render("[ALT+Backspace] go back • [CTRL+C] quit"), dbm.DumpPathInput.View())
 	}
 
 	if err := dbm.Err; err != nil {
@@ -243,6 +306,13 @@ func (dbm DbDumpModel) View() string {
 
 func RunDumpCommand(config *config.SeraphimConfig) {
 	seraphimConfig = *config
+
+	input := textinput.New()
+	input.Cursor.Style = cursorStyle
+	input.TextStyle = focusedStyle
+	input.PlaceholderStyle = focusedStyle
+	input.Prompt = focusedStyle.Render("\u276F ")
+
 	numItems := len(config.Stored_Connections)
 	delegateKeys := newDelegateKeyMap()
 	items := make([]list.Item, numItems)
@@ -272,6 +342,7 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 		StoredConnectionsList: StoredConnectionList,
 		Spinner:               s,
 		ChoosingConnection:    true,
+		DumpPathInput:         input,
 	}
 
 	p := btea.NewProgram(initialModel, btea.WithAltScreen())

@@ -4,9 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os/exec"
 	"seraphim/lib/config"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	pgcommands "github.com/habx/pg-commands"
 )
 
 func FetchTablesForDb(db string, conn config.StoredConnection) []string {
@@ -97,4 +100,51 @@ func FetchDbList(conn config.StoredConnection) []string {
 		log.Fatal("Unknown provider")
 	}
 	return dbs
+}
+
+func CreateDump(selected config.StoredConnection, dumpPath string, selectedDb string) bool {
+	username := selected.User
+	password := selected.Password
+	hostname := selected.Host
+	port := selected.Port
+	dbname := selectedDb
+	driver := selected.Provider
+
+	dumpDir := dumpPath
+	dumpFilenameFormat := fmt.Sprintf("%s-%v.sql", dbname, time.Now().Unix())
+	switch driver {
+	case "mysql":
+		// I'd rather use a golang library to avoid external dependencies but
+		// no library offers the same flexibility
+		sql := fmt.Sprintf("mysqldump -u %s -p%s %s > %s", username, password, dbname, dumpFilenameFormat)
+		cmd := exec.Command("bash", "-c", sql)
+		cmd.Dir = dumpDir
+		err := cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+	case "postgres":
+		dump, _ := pgcommands.NewDump(&pgcommands.Postgres{
+			Host:     hostname,
+			Port:     port,
+			DB:       dbname,
+			Username: username,
+			Password: password,
+		})
+		dumpExec := dump.Exec(pgcommands.ExecOptions{StreamPrint: false})
+		if dumpExec.Error != nil {
+			fmt.Println(dumpExec.Error.Err)
+			fmt.Println(dumpExec.Output)
+			return false
+
+		} else {
+			fmt.Println("Dump success")
+			fmt.Println(dumpExec.Output)
+			return true
+		}
+	default:
+		log.Fatal("Unknown driver")
+		return false
+	}
+	return true
 }

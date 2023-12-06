@@ -21,8 +21,7 @@ var versionRequested bool
 var rootCmd = &cobra.Command{
 	Use:   "seraphim",
 	Short: "Modular and varied toolbelt",
-	Long: `Serpahim aims at providing the user with
-	several commands to make life easieer`,
+	Long:  "Serpahim aims at providing the user with several commands\nto make life easieer\nRequired dependencies:\n- mysqldump",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Thank you for using seraphim")
 		if versionRequested {
