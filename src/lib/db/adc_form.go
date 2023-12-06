@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"os"
 	"seraphim/lib/config"
 	"strconv"
 	"strings"
@@ -17,6 +18,7 @@ type adcFormModel struct {
 	focusIndex int
 	fields     []textinput.Model
 	cursorMode cursor.Mode
+	completed  bool
 }
 
 type AdcResult struct {
@@ -82,7 +84,6 @@ func initialModel() adcFormModel {
 
 		fm.fields[i] = t
 	}
-
 	return fm
 }
 
@@ -117,6 +118,7 @@ func (fm adcFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// If so, exit.
 			if s == "enter" {
 				if fm.focusIndex == len(fm.fields) {
+					fm.completed = true
 					return fm, tea.Quit
 				}
 				switch fm.focusIndex {
@@ -221,20 +223,25 @@ func RunAdcForm() AdcResult {
 
 	r.Err = nil
 
-	if _, err := tea.NewProgram(initialModel(), tea.WithAltScreen()).Run(); err != nil {
+	model, err := tea.NewProgram(initialModel(), tea.WithAltScreen()).Run()
+	if err != nil {
 		r.Err = errors.New("Err: " + err.Error())
 	}
 
-	r.Tag = newConnTag
-	r.NewConnection = config.StoredConnection{
-		Host:           newConnHost,
-		User:           newConnUser,
-		Port:           newConnPort,
-		Password:       newConnPwd,
-		Provider:       newConnProvider,
-		DefaltDatabase: newConnDefDb,
-	}
+	if model.(adcFormModel).completed {
+		r.Tag = newConnTag
+		r.NewConnection = config.StoredConnection{
+			Host:           newConnHost,
+			User:           newConnUser,
+			Port:           newConnPort,
+			Password:       newConnPwd,
+			Provider:       newConnProvider,
+			DefaltDatabase: newConnDefDb,
+		}
 
+	} else {
+		os.Exit(0)
+	}
 	return r
 
 }
