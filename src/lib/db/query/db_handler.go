@@ -127,6 +127,12 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDbs [
 				if len(selectedTables) > 0 {
 					for _, v := range selectedTables {
 						if v.Db == db.Name {
+							if v.Name == "All" {
+								b.Reset()
+								b.WriteString(sql)
+								b.WriteString(" " + db.Name)
+								break
+							}
 							b.WriteString(" " + v.Name)
 						}
 					}

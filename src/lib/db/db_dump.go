@@ -68,7 +68,7 @@ var (
 	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	cursorStyle         = focusedStyle.Copy()
 
-	allTablesSelected bool
+	allTablesSelected = make(map[string]bool, 0)
 	anyDbSelected     bool
 	anyTableSelcted   bool
 )
@@ -99,6 +99,7 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 				dbsListItems[i] = util.DbListItem{
 					Name: db,
 				}
+				allTablesSelected[db] = false
 			}
 			DatabasesList := list.New(dbsListItems, listDelegate, 0, 0)
 			DatabasesList.SetShowFilter(true)
@@ -221,19 +222,21 @@ func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cm
 				if selectedItem == casted {
 					if casted.Selected {
 						if casted.Name == "All" {
-							allTablesSelected = false
+							allTablesSelected[casted.Db] = false
 						}
 						casted.Selected = false
 					} else {
 						if casted.Name == "All" {
-							allTablesSelected = true
+							allTablesSelected[casted.Db] = true
 							casted.Selected = true
 							for k, v := range availableItems {
 								vCasted := v.(util.TableListItem)
-								vCasted.Selected = false
-								availableItems[k] = vCasted
+								if vCasted.Db == casted.Db {
+									vCasted.Selected = false
+									availableItems[k] = vCasted
+								}
 							}
-						} else if casted.Name != "All" && !allTablesSelected {
+						} else if casted.Name != "All" && !allTablesSelected[casted.Db] {
 							casted.Selected = true
 						}
 
