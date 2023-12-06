@@ -8,7 +8,6 @@ import (
 	dh "seraphim/lib/db/query"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	btea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -29,13 +28,9 @@ type DbDumpModel struct {
 	DatabasesList         list.Model
 	TablesList            list.Model
 	DelegateKeys          *delegateKeyMap
-	Spinner               spinner.Model
 	DumpPathInput         textinput.Model
 	Err                   error
 
-	AvailableConnections      []config.StoredConnection
-	AvailableDatabase         []string
-	AvailableTables           []string
 	SelectedConnectionDetails config.StoredConnection
 	SelectedDatabases         []string
 	SelectedTables            []string
@@ -302,8 +297,8 @@ func (dbm DbDumpModel) View() string {
 	return s
 }
 
-func RunDumpCommand(config *config.SeraphimConfig) {
-	seraphimConfig = *config
+func RunDumpCommand(sconfig *config.SeraphimConfig) {
+	seraphimConfig = *sconfig
 
 	input := textinput.New()
 	input.Cursor.Style = cursorStyle
@@ -311,11 +306,11 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 	input.PlaceholderStyle = focusedStyle
 	input.Prompt = focusedStyle.Render("\u276F ")
 
-	numItems := len(config.Stored_Connections)
+	numItems := len(sconfig.Stored_Connections)
 	delegateKeys := newDelegateKeyMap()
 	items := make([]list.Item, numItems)
 	var i int
-	for _, m := range config.Stored_Connections {
+	for _, m := range sconfig.Stored_Connections {
 		for key, value := range m {
 			items[i] = ConnListItem{
 				tag:  key,
@@ -333,12 +328,8 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 	StoredConnectionList.SetShowTitle(false)
 	StoredConnectionList.Styles.Title = titleStyle
 
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-
 	initialModel := DbDumpModel{
 		StoredConnectionsList: StoredConnectionList,
-		Spinner:               s,
 		ChoosingConnection:    true,
 		DumpPathInput:         input,
 	}
@@ -351,11 +342,13 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 	}
 
 	if model, ok := dbm.(DbDumpModel); ok {
-		success := dh.CreateDump(model.SelectedConnectionDetails, model.InputDumpPathValue, model.SelectedDatabases[0])
-		if success {
-			fmt.Println(focusedStyle.Render("---> Dump created successfully!"))
-		} else {
-			fmt.Println(focusedStyle.Render("---> Dump was not created!"))
+		if model.SelectedConnectionDetails != (config.StoredConnection{}) && model.InputDumpPathValue != "" && len(model.SelectedDatabases) != 0 {
+			success := dh.CreateDump(model.SelectedConnectionDetails, model.InputDumpPathValue, model.SelectedDatabases[0])
+			if success {
+				fmt.Println(focusedStyle.Render("---> Dump created successfully!"))
+			} else {
+				fmt.Println(focusedStyle.Render("---> Dump was not created!"))
+			}
 		}
 	} else {
 		log.Fatal("something went wrong")

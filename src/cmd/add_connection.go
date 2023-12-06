@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"seraphim/lib/bubble/form"
 	"seraphim/lib/config"
+	"seraphim/lib/db"
 
 	"github.com/spf13/cobra"
 )
@@ -25,7 +25,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		r := form.RunAdcForm()
+		r := db.RunAdcForm()
 		if r.Err != nil {
 			log.Fatal("something went wrong")
 		}
