@@ -2,9 +2,10 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"seraphim/lib/config"
-	qh "seraphim/lib/db/query"
+	dh "seraphim/lib/db/query"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -43,8 +44,8 @@ type DbDumpModel struct {
 	ChoosingDatabases         bool
 	ChoosingTables            bool
 	TypingPath                bool
+	Success                   bool
 	Done                      bool
-	End                       bool
 }
 
 func (dbm DbDumpModel) Init() btea.Cmd {
@@ -127,7 +128,7 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 					break
 				}
 			}
-			dbs := qh.FetchDbList(dbm.SelectedConnectionDetails)
+			dbs := dh.FetchDbList(dbm.SelectedConnectionDetails)
 			dbsListItems := make([]list.Item, len(dbs))
 			for i, db := range dbs {
 				dbsListItems[i] = DbListItem{
@@ -171,7 +172,7 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 			selectedItem := dbm.DatabasesList.SelectedItem().(DbListItem)
 			dbm.SelectedDatabases = []string{selectedItem.Name}
 			// Should fetch tables for all selected dbs
-			tables := qh.FetchTablesForDb(selectedItem.Name, dbm.SelectedConnectionDetails)
+			tables := dh.FetchTablesForDb(selectedItem.Name, dbm.SelectedConnectionDetails)
 			tableListItems := make([]list.Item, len(tables))
 			for i, table := range tables {
 				tableListItems[i] = TableListItem{
@@ -243,7 +244,7 @@ func (dbm DbDumpModel) updatePathInputView(msg btea.Msg) (btea.Model, btea.Cmd) 
 			}
 			dbm.InputDumpPathValue = inputPath
 			dbm.Done = true
-			return dbm, nil
+			return dbm, btea.Quit
 		}
 	}
 	var cmd btea.Cmd
@@ -268,40 +269,37 @@ func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
 		return dbm.updatePathInputView(msg)
 	}
 
-	if dbm.Done {
-		qh.CreateDump(dbm.SelectedConnectionDetails, dbm.InputDumpPathValue, dbm.SelectedDatabases[0])
-		dbm.Done = false
-		return dbm, btea.Quit
-	}
-
 	return dbm, nil
+
 }
 
 func (dbm DbDumpModel) View() string {
 
+	s := "Press Ctrl+C to Exit"
+
 	if dbm.ChoosingConnection {
-		return fmt.Sprintf("Select a stored connection: \n%s", dbm.StoredConnectionsList.View())
+		s = fmt.Sprintf("Select a stored connection: \n%s", dbm.StoredConnectionsList.View())
 	}
 
 	if dbm.ChoosingDatabases {
 		// Handle selection view
-		return fmt.Sprintf("Select a one or more databases: \n%s", dbm.DatabasesList.View())
+		s = fmt.Sprintf("Select a one or more databases: \n%s", dbm.DatabasesList.View())
 	}
 
 	if dbm.ChoosingTables {
 		// Handle selection view
-		return fmt.Sprintf("Select a one or more tables: \n%s", dbm.TablesList.View())
+		s = fmt.Sprintf("Select a one or more tables: \n%s", dbm.TablesList.View())
 	}
 
 	if dbm.TypingPath {
-		return fmt.Sprintf(pathInputTitleStyle.Render("Select a one or more tables:")+" \n\n%s\n\n"+blurredStyle.Render("[ALT+Backspace] go back • [CTRL+C] quit"), dbm.DumpPathInput.View())
+		s = fmt.Sprintf(pathInputTitleStyle.Render("Select a one or more tables:")+" \n\n%s\n\n"+blurredStyle.Render("[ALT+Backspace] go back • [CTRL+C] quit"), dbm.DumpPathInput.View())
 	}
 
 	if err := dbm.Err; err != nil {
 		return fmt.Sprintf("Sorry, could not fetch tables: \n%s", err)
 	}
 
-	return "Press Ctrl+C to Exit"
+	return s
 }
 
 func RunDumpCommand(config *config.SeraphimConfig) {
@@ -346,10 +344,21 @@ func RunDumpCommand(config *config.SeraphimConfig) {
 	}
 
 	p := btea.NewProgram(initialModel, btea.WithAltScreen())
-	_, err := p.Run()
+	dbm, err := p.Run()
 	if err != nil {
 		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
 		os.Exit(1)
+	}
+
+	if model, ok := dbm.(DbDumpModel); ok {
+		success := dh.CreateDump(model.SelectedConnectionDetails, model.InputDumpPathValue, model.SelectedDatabases[0])
+		if success {
+			fmt.Println(focusedStyle.Render("---> Dump created successfully!"))
+		} else {
+			fmt.Println(focusedStyle.Render("---> Dump was not created!"))
+		}
+	} else {
+		log.Fatal("something went wrong")
 	}
 
 }

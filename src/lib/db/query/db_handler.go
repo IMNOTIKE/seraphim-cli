@@ -121,8 +121,9 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDb st
 		cmd.Dir = dumpDir
 		err := cmd.Run()
 		if err != nil {
-			log.Fatal(err)
+			return false
 		}
+		return true
 	case "postgres":
 		dump, _ := pgcommands.NewDump(&pgcommands.Postgres{
 			Host:     hostname,
@@ -146,5 +147,4 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDb st
 		log.Fatal("Unknown driver")
 		return false
 	}
-	return true
 }
