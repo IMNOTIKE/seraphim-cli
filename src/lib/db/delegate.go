@@ -1,6 +1,8 @@
 package db
 
 import (
+	"seraphim/lib/util"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,7 +16,7 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
 		var title string
 
-		if i, ok := m.SelectedItem().(ConnListItem); ok {
+		if i, ok := m.SelectedItem().(util.ConnListItem); ok {
 			title = i.Title()
 		} else {
 			return nil

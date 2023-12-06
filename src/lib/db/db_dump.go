@@ -6,6 +6,7 @@ import (
 	"os"
 	"seraphim/lib/config"
 	dh "seraphim/lib/db/query"
+	"seraphim/lib/util"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -32,8 +33,8 @@ type DbDumpModel struct {
 	Err                   error
 
 	SelectedConnectionDetails config.StoredConnection
-	SelectedDatabases         []string
-	SelectedTables            []string
+	SelectedDatabases         []util.DbListItem
+	SelectedTables            []util.TableListItem
 	InputDumpPathValue        string
 	ChoosingConnection        bool
 	ChoosingDatabases         bool
@@ -66,42 +67,11 @@ var (
 	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	cursorStyle         = focusedStyle.Copy()
+
+	allTablesSelected bool
+	anyDbSelected     bool
+	anyTableSelcted   bool
 )
-
-//------------------------------------------------//
-//
-//           List items declarations
-//
-//------------------------------------------------//
-
-type ConnListItem struct {
-	tag  string
-	host string
-	user string
-}
-
-func (c ConnListItem) Title() string       { return c.tag }
-func (c ConnListItem) Description() string { return c.user + "@" + c.host }
-func (c ConnListItem) FilterValue() string { return c.tag }
-
-type DbListItem struct {
-	Name     string
-	Selected bool
-}
-
-func (d DbListItem) Title() string       { return d.Name }
-func (d DbListItem) Description() string { return "" }
-func (d DbListItem) FilterValue() string { return d.Name }
-
-type TableListItem struct {
-	Name     string
-	Db       string
-	Selected bool
-}
-
-func (t TableListItem) Title() string       { return t.Name }
-func (t TableListItem) Description() string { return t.Db }
-func (t TableListItem) FilterValue() string { return t.Name }
 
 func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
 
@@ -115,9 +85,9 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 			return dbm, btea.Quit
 		case "enter":
 			dbm.ChoosingConnection = false
-			selectedItem := dbm.StoredConnectionsList.SelectedItem().(ConnListItem)
+			selectedItem := dbm.StoredConnectionsList.SelectedItem().(util.ConnListItem)
 			for _, conn := range seraphimConfig.Stored_Connections {
-				t := conn[selectedItem.tag]
+				t := conn[selectedItem.Tag]
 				if t != (config.StoredConnection{}) {
 					dbm.SelectedConnectionDetails = t
 					break
@@ -126,7 +96,7 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 			dbs := dh.FetchDbList(dbm.SelectedConnectionDetails)
 			dbsListItems := make([]list.Item, len(dbs))
 			for i, db := range dbs {
-				dbsListItems[i] = DbListItem{
+				dbsListItems[i] = util.DbListItem{
 					Name: db,
 				}
 			}
@@ -134,6 +104,7 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 			DatabasesList.SetShowFilter(true)
 			DatabasesList.SetShowTitle(false)
 			DatabasesList.Styles.Title = titleStyle
+
 			dbm.DatabasesList = DatabasesList
 			dbm.ChoosingDatabases = true
 			return dbm, func() btea.Msg {
@@ -157,33 +128,74 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return dbm, btea.Quit
-		case "backspace":
+		case "alt+backspace":
 			dbm.ChoosingConnection = true
+			dbm.SelectedDatabases = make([]util.DbListItem, 0)
+			anyDbSelected = false
 			dbm.ChoosingDatabases = false
 		case " ":
-			// Handle multiple selection
-		case "enter":
-			dbm.ChoosingDatabases = false
-			selectedItem := dbm.DatabasesList.SelectedItem().(DbListItem)
-			dbm.SelectedDatabases = []string{selectedItem.Name}
-			// Should fetch tables for all selected dbs
-			tables := dh.FetchTablesForDb(selectedItem.Name, dbm.SelectedConnectionDetails)
-			tableListItems := make([]list.Item, len(tables))
-			for i, table := range tables {
-				tableListItems[i] = TableListItem{
-					Name: table,
+			selectedItem := dbm.DatabasesList.SelectedItem().(util.DbListItem)
+			availableItems := dbm.DatabasesList.Items()
+			for i, item := range availableItems {
+				casted := item.(util.DbListItem)
+				if selectedItem == casted {
+					if casted.Selected {
+						casted.Selected = false
+
+					} else {
+						casted.Selected = true
+					}
+					availableItems[i] = casted
+					dbm.DatabasesList.SetItems(availableItems)
 				}
 			}
-			TablesList := list.New(tableListItems, listDelegate, 0, 0)
-			TablesList.SetShowFilter(true)
-			TablesList.SetShowTitle(false)
-			TablesList.Styles.Title = titleStyle
-			dbm.TablesList = TablesList
-			dbm.ChoosingTables = true
-			return dbm, func() btea.Msg {
-				return btea.WindowSizeMsg{
-					Height: dbm.DatabasesList.Height(),
-					Width:  dbm.DatabasesList.Width(),
+			aDs := false
+			for _, v := range availableItems {
+				casted := v.(util.DbListItem)
+				if casted.Selected {
+					aDs = true
+				}
+			}
+			anyDbSelected = aDs
+		case "enter":
+			if anyDbSelected {
+				dbm.ChoosingDatabases = false
+
+				selectedDbs := make([]util.DbListItem, 0)
+				for _, v := range dbm.DatabasesList.Items() {
+					casted := v.(util.DbListItem)
+					if casted.Selected {
+						selectedDbs = append(selectedDbs, casted)
+					}
+				}
+				dbm.SelectedDatabases = selectedDbs
+
+				tableListItems := make([]list.Item, 0)
+				for _, db := range dbm.SelectedDatabases {
+					dbTables := dh.FetchTablesForDb(db.Name, dbm.SelectedConnectionDetails)
+					tableListItems = append(tableListItems, util.TableListItem{
+						Name: "All",
+						Db:   db.Name,
+					})
+					for _, table := range dbTables {
+						tableListItems = append(tableListItems, util.TableListItem{
+							Name: table,
+							Db:   db.Name,
+						})
+					}
+				}
+
+				TablesList := list.New(tableListItems, listDelegate, 0, 0)
+				TablesList.SetShowFilter(true)
+				TablesList.SetShowTitle(false)
+				TablesList.Styles.Title = titleStyle
+				dbm.TablesList = TablesList
+				dbm.ChoosingTables = true
+				return dbm, func() btea.Msg {
+					return btea.WindowSizeMsg{
+						Height: dbm.DatabasesList.Height(),
+						Width:  dbm.DatabasesList.Width(),
+					}
 				}
 			}
 		}
@@ -202,15 +214,58 @@ func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cm
 		case "ctrl+c", "q":
 			return dbm, btea.Quit
 		case " ":
-			// Handle multiple selection
-		case "backspace":
+			selectedItem := dbm.TablesList.SelectedItem().(util.TableListItem)
+			availableItems := dbm.TablesList.Items()
+			for i, item := range availableItems {
+				casted := item.(util.TableListItem)
+				if selectedItem == casted {
+					if casted.Selected {
+						if casted.Name == "All" {
+							allTablesSelected = false
+						}
+						casted.Selected = false
+					} else {
+						if casted.Name == "All" {
+							allTablesSelected = true
+							casted.Selected = true
+							for k, v := range availableItems {
+								vCasted := v.(util.TableListItem)
+								vCasted.Selected = false
+								availableItems[k] = vCasted
+							}
+						} else if casted.Name != "All" && !allTablesSelected {
+							casted.Selected = true
+						}
+
+					}
+					availableItems[i] = casted
+					dbm.TablesList.SetItems(availableItems)
+				}
+			}
+			aTs := false
+			for _, v := range availableItems {
+				casted := v.(util.TableListItem)
+				if casted.Selected {
+					aTs = true
+				}
+			}
+			anyTableSelcted = aTs
+		case "alt+backspace":
 			dbm.ChoosingDatabases = true
+			dbm.SelectedTables = make([]util.TableListItem, 0)
+			anyTableSelcted = false
 			dbm.ChoosingTables = false
 		case "enter":
-			dbm.ChoosingTables = false
-			selectedTable := dbm.TablesList.SelectedItem().(TableListItem)
-			dbm.SelectedTables = []string{selectedTable.Name}
-			dbm.TypingPath = true
+			if anyTableSelcted {
+				dbm.ChoosingTables = false
+				for _, v := range dbm.TablesList.Items() {
+					casted := v.(util.TableListItem)
+					if casted.Selected {
+						dbm.SelectedTables = append(dbm.SelectedTables, casted)
+					}
+				}
+				dbm.TypingPath = true
+			}
 			return dbm, nil
 		}
 	}
@@ -230,6 +285,7 @@ func (dbm DbDumpModel) updatePathInputView(msg btea.Msg) (btea.Model, btea.Cmd) 
 			return dbm, btea.Quit
 		case "alt+backspace":
 			dbm.ChoosingTables = true
+			dbm.DumpPathInput.SetValue("")
 			dbm.TypingPath = false
 		case "enter":
 			dbm.TypingPath = false
@@ -277,12 +333,10 @@ func (dbm DbDumpModel) View() string {
 	}
 
 	if dbm.ChoosingDatabases {
-		// Handle selection view
 		s = fmt.Sprintf("Select a one or more databases: \n%s", dbm.DatabasesList.View())
 	}
 
 	if dbm.ChoosingTables {
-		// Handle selection view
 		s = fmt.Sprintf("Select a one or more tables: \n%s", dbm.TablesList.View())
 	}
 
@@ -312,10 +366,10 @@ func RunDumpCommand(sconfig *config.SeraphimConfig) {
 	var i int
 	for _, m := range sconfig.Stored_Connections {
 		for key, value := range m {
-			items[i] = ConnListItem{
-				tag:  key,
-				host: value.Host,
-				user: value.User,
+			items[i] = util.ConnListItem{
+				Tag:  key,
+				Host: value.Host,
+				User: value.User,
 			}
 		}
 		i++
@@ -342,8 +396,8 @@ func RunDumpCommand(sconfig *config.SeraphimConfig) {
 	}
 
 	if model, ok := dbm.(DbDumpModel); ok {
-		if model.SelectedConnectionDetails != (config.StoredConnection{}) && model.InputDumpPathValue != "" && len(model.SelectedDatabases) != 0 {
-			success := dh.CreateDump(model.SelectedConnectionDetails, model.InputDumpPathValue, model.SelectedDatabases[0])
+		if model.SelectedConnectionDetails != (config.StoredConnection{}) && model.InputDumpPathValue != "" && len(model.SelectedDatabases) != 0 && len(model.SelectedTables) != 0 {
+			success := dh.CreateDump(model.SelectedConnectionDetails, model.InputDumpPathValue, model.SelectedDatabases, model.SelectedTables)
 			if success {
 				fmt.Println(focusedStyle.Render("---> Dump created successfully!"))
 			} else {

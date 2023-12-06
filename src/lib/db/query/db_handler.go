@@ -6,6 +6,8 @@ import (
 	"log"
 	"os/exec"
 	"seraphim/lib/config"
+	"seraphim/lib/util"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -102,33 +104,55 @@ func FetchDbList(conn config.StoredConnection) []string {
 	return dbs
 }
 
-func CreateDump(selected config.StoredConnection, dumpPath string, selectedDb string) bool {
+func CreateDump(selected config.StoredConnection, dumpPath string, selectedDbs []util.DbListItem, selectedTables []util.TableListItem) bool {
 	username := selected.User
 	password := selected.Password
 	hostname := selected.Host
 	port := selected.Port
-	dbname := selectedDb
 	driver := selected.Provider
 
 	dumpDir := dumpPath
-	dumpFilenameFormat := fmt.Sprintf("%s-%v.sql", dbname, time.Now().Unix())
+	dumpFilenameFormat := fmt.Sprintf("%s-%v.sql", "dump", time.Now().Unix())
 	switch driver {
 	case "mysql":
 		// I'd rather use a golang library to avoid external dependencies but
 		// no library offers the same flexibility
-		sql := fmt.Sprintf("mysqldump -u %s -p%s %s > %s", username, password, dbname, dumpFilenameFormat)
-		cmd := exec.Command("bash", "-c", sql)
-		cmd.Dir = dumpDir
-		err := cmd.Run()
-		if err != nil {
-			return false
+		sql := fmt.Sprintf("mysqldump -u %s -p%s ", username, password)
+		isFirst := true
+		if len(selectedDbs) > 0 {
+			for _, db := range selectedDbs {
+				var b strings.Builder
+				b.WriteString(sql)
+				b.WriteString(" " + db.Name)
+				if len(selectedTables) > 0 {
+					for _, v := range selectedTables {
+						if v.Db == db.Name {
+							b.WriteString(" " + v.Name)
+						}
+					}
+				}
+				if isFirst {
+					b.WriteString(fmt.Sprintf(" > %s", dumpFilenameFormat))
+					isFirst = false
+				} else {
+					b.WriteString(fmt.Sprintf(" >> %s", dumpFilenameFormat))
+				}
+				cmd := exec.Command("bash", "-c", b.String())
+				cmd.Dir = dumpDir
+				err := cmd.Run()
+				if err != nil {
+					serr := err.Error()
+					fmt.Println(serr)
+					return false
+				}
+			}
 		}
 		return true
 	case "postgres":
 		dump, _ := pgcommands.NewDump(&pgcommands.Postgres{
 			Host:     hostname,
 			Port:     port,
-			DB:       dbname,
+			DB:       "",
 			Username: username,
 			Password: password,
 		})
