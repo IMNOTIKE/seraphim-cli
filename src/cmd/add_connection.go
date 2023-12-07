@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"seraphim/lib/config"
 	"seraphim/lib/db"
 
@@ -29,10 +28,10 @@ to quickly create a Cobra application.`,
 		if r.Err != nil {
 			log.Fatal("something went wrong")
 		}
-		if operationResult := config.AddConnection(r.NewConnection, r.Tag); reflect.ValueOf(operationResult).Kind().String() == reflect.ValueOf("").Kind().String() {
-			fmt.Printf("Success: \n%s\n", operationResult)
+		if operationResult := config.AddConnection(false, config.SeraphimConfig{}, r.NewConnection, r.Tag); operationResult.Err == nil {
+			fmt.Printf("%s\n", operationResult.Msg)
 		} else {
-			fmt.Printf("Oh no, something went wrong: \n%v", operationResult.(error))
+			fmt.Printf("Oh no, something went wrong: \n%v", operationResult.Err.Error())
 		}
 	},
 }

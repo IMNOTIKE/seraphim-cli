@@ -10,7 +10,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
-	btea "github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -44,8 +44,8 @@ type DbDumpModel struct {
 	Done                      bool
 }
 
-func (dbm DbDumpModel) Init() btea.Cmd {
-	return btea.Batch(textinput.Blink, btea.EnterAltScreen)
+func (dbm DbDumpModel) Init() tea.Cmd {
+	return tea.Batch(textinput.Blink, tea.EnterAltScreen)
 }
 
 var (
@@ -73,16 +73,16 @@ var (
 	anyTableSelcted   bool
 )
 
-func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
+func (dbm DbDumpModel) updateConnChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
-	case btea.WindowSizeMsg:
+	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		dbm.StoredConnectionsList.SetSize(msg.Width-h, msg.Height-v)
-	case btea.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			return dbm, btea.Quit
+			return dbm, tea.Quit
 		case "enter":
 			dbm.ChoosingConnection = false
 			selectedItem := dbm.StoredConnectionsList.SelectedItem().(util.ConnListItem)
@@ -108,32 +108,35 @@ func (dbm DbDumpModel) updateConnChosingView(msg btea.Msg) (btea.Model, btea.Cmd
 
 			dbm.DatabasesList = DatabasesList
 			dbm.ChoosingDatabases = true
-			return dbm, func() btea.Msg {
-				return btea.WindowSizeMsg{
+			return dbm, func() tea.Msg {
+				return tea.WindowSizeMsg{
 					Height: dbm.StoredConnectionsList.Height(),
 					Width:  dbm.StoredConnectionsList.Width(),
 				}
 			}
 		}
 	}
-	var cmd btea.Cmd
+	var cmd tea.Cmd
 	dbm.StoredConnectionsList, cmd = dbm.StoredConnectionsList.Update(msg)
 	return dbm, cmd
 }
 
-func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
+func (dbm DbDumpModel) updateDbChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case btea.WindowSizeMsg:
+	case tea.WindowSizeMsg:
 		dbm.DatabasesList.SetSize(msg.Width, msg.Height)
-	case btea.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			return dbm, btea.Quit
-		case "alt+backspace":
+			return dbm, tea.Quit
+		case "alt+backspace", "esc":
 			dbm.ChoosingConnection = true
 			dbm.SelectedDatabases = make([]util.DbListItem, 0)
 			anyDbSelected = false
 			dbm.ChoosingDatabases = false
+			var cmd tea.Cmd
+			dbm.StoredConnectionsList, cmd = dbm.StoredConnectionsList.Update(msg)
+			return dbm, tea.Batch(tea.ClearScreen, cmd)
 		case " ":
 			selectedItem := dbm.DatabasesList.SelectedItem().(util.DbListItem)
 			availableItems := dbm.DatabasesList.Items()
@@ -192,8 +195,8 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 				TablesList.Styles.Title = titleStyle
 				dbm.TablesList = TablesList
 				dbm.ChoosingTables = true
-				return dbm, func() btea.Msg {
-					return btea.WindowSizeMsg{
+				return dbm, func() tea.Msg {
+					return tea.WindowSizeMsg{
 						Height: dbm.DatabasesList.Height(),
 						Width:  dbm.DatabasesList.Width(),
 					}
@@ -201,19 +204,19 @@ func (dbm DbDumpModel) updateDbChosingView(msg btea.Msg) (btea.Model, btea.Cmd) 
 			}
 		}
 	}
-	var cmd btea.Cmd
+	var cmd tea.Cmd
 	dbm.DatabasesList, cmd = dbm.DatabasesList.Update(msg)
 	return dbm, cmd
 }
 
-func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cmd) {
+func (dbm DbDumpModel) updateTableChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case btea.WindowSizeMsg:
+	case tea.WindowSizeMsg:
 		dbm.TablesList.SetSize(msg.Width, msg.Height)
-	case btea.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			return dbm, btea.Quit
+			return dbm, tea.Quit
 		case " ":
 			selectedItem := dbm.TablesList.SelectedItem().(util.TableListItem)
 			availableItems := dbm.TablesList.Items()
@@ -253,11 +256,14 @@ func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cm
 				}
 			}
 			anyTableSelcted = aTs
-		case "alt+backspace":
+		case "alt+backspace", "esc":
 			dbm.ChoosingDatabases = true
 			dbm.SelectedTables = make([]util.TableListItem, 0)
 			anyTableSelcted = false
 			dbm.ChoosingTables = false
+			var cmd tea.Cmd
+			dbm.DatabasesList, cmd = dbm.DatabasesList.Update(msg)
+			return dbm, tea.Batch(tea.ClearScreen, cmd)
 		case "enter":
 			if anyTableSelcted {
 				dbm.ChoosingTables = false
@@ -272,24 +278,27 @@ func (dbm DbDumpModel) updateTableChosingView(msg btea.Msg) (btea.Model, btea.Cm
 			return dbm, nil
 		}
 	}
-	var cmd btea.Cmd
+	var cmd tea.Cmd
 	dbm.TablesList, cmd = dbm.TablesList.Update(msg)
 	return dbm, cmd
 }
 
-func (dbm DbDumpModel) updatePathInputView(msg btea.Msg) (btea.Model, btea.Cmd) {
+func (dbm DbDumpModel) updatePathInputView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case btea.WindowSizeMsg:
+	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
 		dbm.TablesList.SetSize(msg.Width-h, msg.Height-v)
-	case btea.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			return dbm, btea.Quit
+			return dbm, tea.Quit
 		case "alt+backspace":
 			dbm.ChoosingTables = true
 			dbm.DumpPathInput.SetValue("")
 			dbm.TypingPath = false
+			var cmd tea.Cmd
+			dbm.TablesList, cmd = dbm.TablesList.Update(msg)
+			return dbm, tea.Batch(tea.ClearScreen, cmd)
 		case "enter":
 			dbm.TypingPath = false
 			inputPath := dbm.DumpPathInput.Value()
@@ -298,16 +307,16 @@ func (dbm DbDumpModel) updatePathInputView(msg btea.Msg) (btea.Model, btea.Cmd) 
 			}
 			dbm.InputDumpPathValue = inputPath
 			dbm.Done = true
-			return dbm, btea.Quit
+			return dbm, tea.Quit
 		}
 	}
-	var cmd btea.Cmd
+	var cmd tea.Cmd
 	dbm.DumpPathInput.Focus()
 	dbm.DumpPathInput, cmd = dbm.DumpPathInput.Update(msg)
 	return dbm, cmd
 }
 
-func (dbm DbDumpModel) Update(msg btea.Msg) (btea.Model, btea.Cmd) {
+func (dbm DbDumpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if dbm.ChoosingConnection {
 		return dbm.updateConnChosingView(msg)
@@ -391,7 +400,7 @@ func RunDumpCommand(sconfig *config.SeraphimConfig) {
 		DumpPathInput:         input,
 	}
 
-	p := btea.NewProgram(initialModel, btea.WithAltScreen())
+	p := tea.NewProgram(initialModel, tea.WithAltScreen())
 	dbm, err := p.Run()
 	if err != nil {
 		fmt.Printf("FATAL -- Alas, there's been an error: %v", err)
