@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"runtime"
 	"seraphim/lib/config"
 	"seraphim/lib/util"
 	"strings"
@@ -143,12 +144,7 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDbs [
 				} else {
 					b.WriteString(fmt.Sprintf(" >> %s", dumpFilenameFormat))
 				}
-				cmd := exec.Command("bash", "-c", b.String())
-				cmd.Dir = dumpDir
-				err := cmd.Run()
-				if err != nil {
-					serr := err.Error()
-					fmt.Println(serr)
+				if cmdRes := handleCommandForSys(dumpDir, b.String()); !cmdRes {
 					return false
 				}
 			}
@@ -177,4 +173,29 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDbs [
 		log.Fatal("Unknown driver")
 		return false
 	}
+}
+
+func handleCommandForSys(dir string ,command string) bool{
+	
+	switch runtime.GOOS {
+	case "windows":
+		cmd := exec.Command("cmd", "/c", command)
+		cmd.Dir = dir
+		err := cmd.Run()
+		if err != nil {
+			serr := err.Error()
+			fmt.Println(serr)
+			return false
+		}
+	default:
+		cmd := exec.Command("bash", "-c", command)
+		cmd.Dir = dir
+		err := cmd.Run()
+		if err != nil {
+			serr := err.Error()
+			fmt.Println(serr)
+			return false
+		}
+	}
+	return true
 }
