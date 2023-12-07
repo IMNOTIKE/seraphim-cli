@@ -26,23 +26,3 @@ var dumpCmd = &cobra.Command{
 func init() {
 	databaseCmd.AddCommand(dumpCmd)
 }
-
-// func RestoreDB(){
-// 	restore, _ := pg_dumper.NewRestore(&pg_dumper.Postgres{
-// 		Host:     "localhost",
-// 		Port:     5432,
-// 		DB:       "dev_example",
-// 		Username: "example",
-// 		Password: "example",
-// 	})
-// 	restoreExec := restore.Exec(dumpExec.File, pg_dumper.ExecOptions{StreamPrint: false})
-// 	if restoreExec.Error != nil {
-// 		fmt.Println(restoreExec.Error.Err)
-// 		fmt.Println(restoreExec.Output)
-
-// 	} else {
-// 		fmt.Println("Restore success")
-// 		fmt.Println(restoreExec.Output)
-
-// 	}
-// }

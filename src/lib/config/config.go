@@ -23,7 +23,7 @@ type StoredConnection struct {
 	Port           int    `mapstructure:"port"`
 	Password       string `mapstructure:"password"`
 	Provider       string `mapstructure:"provider"`
-	DefaltDatabase string `mapstructure:"default_database"`
+	DefaultDatabase string `mapstructure:"default_database"`
 }
 
 type SeraphimConfig struct {

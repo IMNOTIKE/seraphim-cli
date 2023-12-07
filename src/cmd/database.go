@@ -11,7 +11,7 @@ import (
 var databaseCmd = &cobra.Command{
 	Use:     "database",
 	Aliases: []string{"db"},
-	Short:   "Common interface for multiple datasources",
+	Short:   "Common interface for multiple data sources",
 	Long: `This command aims at providing the user a common interface for 
 	many different databases`,
 }

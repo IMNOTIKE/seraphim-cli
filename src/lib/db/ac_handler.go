@@ -177,12 +177,12 @@ func (fm adcFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// Handle character input and blinking
-	cmd := fm.updatefields(msg)
+	cmd := fm.updateFields(msg)
 
 	return fm, cmd
 }
 
-func (fm *adcFormModel) updatefields(msg tea.Msg) tea.Cmd {
+func (fm *adcFormModel) updateFields(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(fm.fields))
 
 	// Only text fields with Focus() set will respond, so it's safe to simply
@@ -236,7 +236,7 @@ func RunAdcForm() AdcResult {
 			Port:           newConnPort,
 			Password:       newConnPwd,
 			Provider:       newConnProvider,
-			DefaltDatabase: newConnDefDb,
+			DefaultDatabase: newConnDefDb,
 		}
 
 	} else {
