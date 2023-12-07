@@ -1,0 +1,19 @@
+version: alpha_v0.0.1
+branding:
+  name: seraphim
+default_dump_path: /workspace
+stored_connections:
+  - test_local_mysql:
+      host: localhost
+      user: root
+      pwd: ""
+      port: 3306
+      provider: mysql
+      default_database: local
+  - test_local_postgres:
+      host: localhost
+      user: root
+      pwd: ""
+      port: 5432
+      provider: postgresql
+      default_database: local
