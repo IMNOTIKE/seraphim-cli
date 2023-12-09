@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"seraphim/lib/config"
 	"strconv"
@@ -73,7 +74,7 @@ func initialModel() adcFormModel {
 			t.EchoCharacter = '•'
 		case 4:
 			t.Placeholder = "Port"
-			t.CharLimit = 4
+			t.CharLimit = 5
 		case 5:
 			t.Placeholder = "Provider"
 			t.CharLimit = 64
@@ -119,27 +120,24 @@ func (fm adcFormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" {
 				if fm.focusIndex == len(fm.fields) {
 					fm.completed = true
-					return fm, tea.Quit
-				}
-				switch fm.focusIndex {
-				case 0:
-					newConnTag = fm.fields[fm.focusIndex].Value()
-				case 1:
-					newConnHost = fm.fields[fm.focusIndex].Value()
-				case 2:
-					newConnUser = fm.fields[fm.focusIndex].Value()
-				case 3:
-					newConnPwd = fm.fields[fm.focusIndex].Value()
-				case 4:
-					if p, err := strconv.Atoi(fm.fields[fm.focusIndex].Value()); err == nil {
-						newConnPort = p
-					} else {
-						return fm, tea.Quit
+					newConnTag = fm.fields[0].Value()
+					newConnHost = fm.fields[1].Value()
+					newConnUser = fm.fields[2].Value()
+					newConnPwd = fm.fields[3].Value()
+					var port = 0
+					portFieldValue := fm.fields[4].Value()
+					if portFieldValue != "" {
+						if p, err := strconv.Atoi(portFieldValue); err == nil {
+							port = p
+						}
 					}
-				case 5:
-					newConnProvider = fm.fields[fm.focusIndex].Value()
-				case 6:
-					newConnDefDb = strings.Replace(strings.Trim(fm.fields[fm.focusIndex].Value(), " "), " ", "_", -1)
+					newConnPort = port
+					if newConnPort < 1024 && newConnPort > 49151 {
+						log.Fatal("port should range from 1024 ti 49151")
+					}
+					newConnProvider = fm.fields[5].Value()
+					newConnDefDb = strings.Replace(strings.Trim(fm.fields[6].Value(), " "), " ", "_", -1)
+					return fm, tea.Quit
 				}
 			}
 
@@ -231,11 +229,11 @@ func RunAdcForm() AdcResult {
 	if model.(adcFormModel).completed {
 		r.Tag = newConnTag
 		r.NewConnection = config.StoredConnection{
-			Host:           newConnHost,
-			User:           newConnUser,
-			Port:           newConnPort,
-			Password:       newConnPwd,
-			Provider:       newConnProvider,
+			Host:            newConnHost,
+			User:            newConnUser,
+			Port:            newConnPort,
+			Password:        newConnPwd,
+			Provider:        newConnProvider,
 			DefaultDatabase: newConnDefDb,
 		}
 

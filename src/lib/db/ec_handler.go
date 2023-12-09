@@ -74,10 +74,9 @@ func (m StoredConnectionEditorModel) updateEditingView(msg tea.Msg) (tea.Model, 
 						}
 					}
 					newConnPort = port
-					if newConnPort == 0 {
+					if newConnPort < 1024 && newConnPort > 49151 {
 						newConnPort = m.ChosenConnection.Port
 					}
-
 					newConnProvider = m.Fields[5].Value()
 					if newConnProvider == "" {
 						newConnProvider = m.ChosenConnection.Provider
@@ -87,11 +86,11 @@ func (m StoredConnectionEditorModel) updateEditingView(msg tea.Msg) (tea.Model, 
 						newConnDefDb = m.ChosenConnection.DefaultDatabase
 					}
 					newConn := config.StoredConnection{
-						Host:           newConnHost,
-						User:           newConnUser,
-						Password:       newConnPwd,
-						Port:           newConnPort,
-						Provider:       newConnProvider,
+						Host:            newConnHost,
+						User:            newConnUser,
+						Password:        newConnPwd,
+						Port:            newConnPort,
+						Provider:        newConnProvider,
 						DefaultDatabase: newConnDefDb,
 					}
 					m.EditResult = config.EditConnection(appConfig, m.ChosenConnection, newConn, m.ChosenConnectionTag, newConnTag)
@@ -273,7 +272,7 @@ func RunStoredConnectionEditHandler(sconf *config.SeraphimConfig) {
 	editorModel := StoredConnectionEditorModel{
 		StoredConnectionsList: StoredConnectionList,
 		Choosing:              true,
-		ChosenConnectionTag:  "",
+		ChosenConnectionTag:   "",
 	}
 
 	m, err := tea.NewProgram(editorModel, tea.WithAltScreen()).Run()
@@ -294,8 +293,8 @@ func RunStoredConnectionEditHandler(sconf *config.SeraphimConfig) {
 
 type StoredConnectionEditorModel struct {
 	StoredConnectionsList list.Model
-	ChosenConnection     config.StoredConnection
-	ChosenConnectionTag  string
+	ChosenConnection      config.StoredConnection
+	ChosenConnectionTag   string
 
 	Choosing bool
 	Editing  bool
