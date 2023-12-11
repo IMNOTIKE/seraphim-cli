@@ -8,6 +8,10 @@ on:
     tags:
       - "*"
 
+defaults:
+  run:
+    working-directory: src
+
 permissions:
   contents: write
   # packages: write
@@ -21,7 +25,6 @@ jobs:
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
-      - run: cd ./src
       - uses: actions/setup-go@v4
         with:
           go-version: stable
