@@ -20,8 +20,8 @@ var versionRequested bool
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "seraphim",
-	Short: "Modular and varied toolbelt",
-	Long:  "Serpahim aims at providing the user with several commands\nto make life easieer\nRequired dependencies:\n- mysqldump",
+	Short: "Modular and varied tool belt",
+	Long:  "Seraphim aims at providing the user with several commands\nto make life easier\nRequired dependencies:\n- mysqldump",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Thank you for using seraphim")
 		if versionRequested {

@@ -52,19 +52,19 @@ func (m StoredConnectionEditorModel) updateEditingView(msg tea.Msg) (tea.Model, 
 					m.Completed = true
 					newConnTag = m.Fields[0].Value()
 					if newConnTag == "" {
-						newConnTag = m.ChoosenConnectionTag
+						newConnTag = m.ChosenConnectionTag
 					}
 					newConnHost = m.Fields[1].Value()
 					if newConnHost == "" {
-						newConnHost = m.ChoosenConnection.Host
+						newConnHost = m.ChosenConnection.Host
 					}
 					newConnUser = m.Fields[2].Value()
 					if newConnUser == "" {
-						newConnUser = m.ChoosenConnection.User
+						newConnUser = m.ChosenConnection.User
 					}
 					newConnPwd = m.Fields[3].Value()
 					if newConnPwd == "" {
-						newConnPwd = m.ChoosenConnection.Password
+						newConnPwd = m.ChosenConnection.Password
 					}
 					var port = 0
 					portFieldValue := m.Fields[4].Value()
@@ -74,27 +74,26 @@ func (m StoredConnectionEditorModel) updateEditingView(msg tea.Msg) (tea.Model, 
 						}
 					}
 					newConnPort = port
-					if newConnPort == 0 {
-						newConnPort = m.ChoosenConnection.Port
+					if newConnPort < 1024 && newConnPort > 49151 {
+						newConnPort = m.ChosenConnection.Port
 					}
-
 					newConnProvider = m.Fields[5].Value()
 					if newConnProvider == "" {
-						newConnProvider = m.ChoosenConnection.Provider
+						newConnProvider = m.ChosenConnection.Provider
 					}
 					newConnDefDb = strings.Replace(strings.Trim(m.Fields[6].Value(), " "), " ", "_", -1)
 					if newConnDefDb == "" {
-						newConnDefDb = m.ChoosenConnection.DefaltDatabase
+						newConnDefDb = m.ChosenConnection.DefaultDatabase
 					}
 					newConn := config.StoredConnection{
-						Host:           newConnHost,
-						User:           newConnUser,
-						Password:       newConnPwd,
-						Port:           newConnPort,
-						Provider:       newConnProvider,
-						DefaltDatabase: newConnDefDb,
+						Host:            newConnHost,
+						User:            newConnUser,
+						Password:        newConnPwd,
+						Port:            newConnPort,
+						Provider:        newConnProvider,
+						DefaultDatabase: newConnDefDb,
 					}
-					m.EditResult = config.EditConnection(appConfig, m.ChoosenConnection, newConn, m.ChoosenConnectionTag, newConnTag)
+					m.EditResult = config.EditConnection(appConfig, m.ChosenConnection, newConn, m.ChosenConnectionTag, newConnTag)
 
 					return m, tea.Quit
 				}
@@ -134,12 +133,12 @@ func (m StoredConnectionEditorModel) updateEditingView(msg tea.Msg) (tea.Model, 
 	}
 
 	// Handle character input and blinking
-	cmd := m.updatefields(msg)
+	cmd := m.updateFields(msg)
 
 	return m, cmd
 }
 
-func (fm *StoredConnectionEditorModel) updatefields(msg tea.Msg) tea.Cmd {
+func (fm *StoredConnectionEditorModel) updateFields(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(fm.Fields))
 
 	// Only text Fields with Focus() set will respond, so it's safe to simply
@@ -206,13 +205,13 @@ func (m *StoredConnectionEditorModel) getEditableFields(storedConnection config.
 	providerInput.CharLimit = 64
 	m.Fields = append(m.Fields, providerInput)
 	defDbInput := textinput.New()
-	defDbInput.Placeholder = "Default db: \u21BA " + storedConnection.DefaltDatabase
+	defDbInput.Placeholder = "Default db: \u21BA " + storedConnection.DefaultDatabase
 	defDbInput.CharLimit = 64
 	m.Fields = append(m.Fields, defDbInput)
 
 }
 
-func (m StoredConnectionEditorModel) updateConnectionChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m StoredConnectionEditorModel) updateConnectionChoosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -229,14 +228,14 @@ func (m StoredConnectionEditorModel) updateConnectionChosingView(msg tea.Msg) (t
 					if casted, ok := selectedItem.(util.ConnListItem); ok && casted.Tag == tag {
 						m.Choosing = false
 						m.Editing = true
-						m.ChoosenConnection = c
-						m.ChoosenConnectionTag = tag
+						m.ChosenConnection = c
+						m.ChosenConnectionTag = tag
 						m.getEditableFields(c, casted.Tag)
 						return m, nil
 					}
 				}
 			}
-			return m, tea.Quit // Handle error selected not in list (?) althought it should not be possible
+			return m, tea.Quit // Handle error selected not in list (?) although it should not be possible
 		}
 	}
 
@@ -273,7 +272,7 @@ func RunStoredConnectionEditHandler(sconf *config.SeraphimConfig) {
 	editorModel := StoredConnectionEditorModel{
 		StoredConnectionsList: StoredConnectionList,
 		Choosing:              true,
-		ChoosenConnectionTag:  "",
+		ChosenConnectionTag:   "",
 	}
 
 	m, err := tea.NewProgram(editorModel, tea.WithAltScreen()).Run()
@@ -294,8 +293,8 @@ func RunStoredConnectionEditHandler(sconf *config.SeraphimConfig) {
 
 type StoredConnectionEditorModel struct {
 	StoredConnectionsList list.Model
-	ChoosenConnection     config.StoredConnection
-	ChoosenConnectionTag  string
+	ChosenConnection      config.StoredConnection
+	ChosenConnectionTag   string
 
 	Choosing bool
 	Editing  bool
@@ -315,7 +314,7 @@ func (m StoredConnectionEditorModel) Init() tea.Cmd {
 
 func (m StoredConnectionEditorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.Choosing {
-		return m.updateConnectionChosingView(msg)
+		return m.updateConnectionChoosingView(msg)
 	}
 
 	if m.Editing {

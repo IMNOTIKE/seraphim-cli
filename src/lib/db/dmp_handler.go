@@ -70,10 +70,10 @@ var (
 
 	allTablesSelected = make(map[string]bool, 0)
 	anyDbSelected     bool
-	anyTableSelcted   bool
+	anyTableSelected   bool
 )
 
-func (dbm DbDumpModel) updateConnChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (dbm DbDumpModel) updateConnChoosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -121,7 +121,7 @@ func (dbm DbDumpModel) updateConnChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return dbm, cmd
 }
 
-func (dbm DbDumpModel) updateDbChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (dbm DbDumpModel) updateDbChoosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		dbm.DatabasesList.SetSize(msg.Width, msg.Height)
@@ -209,7 +209,7 @@ func (dbm DbDumpModel) updateDbChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return dbm, cmd
 }
 
-func (dbm DbDumpModel) updateTableChosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (dbm DbDumpModel) updateTableChoosingView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		dbm.TablesList.SetSize(msg.Width, msg.Height)
@@ -255,17 +255,17 @@ func (dbm DbDumpModel) updateTableChosingView(msg tea.Msg) (tea.Model, tea.Cmd) 
 					aTs = true
 				}
 			}
-			anyTableSelcted = aTs
+			anyTableSelected = aTs
 		case "alt+backspace", "esc":
 			dbm.ChoosingDatabases = true
 			dbm.SelectedTables = make([]util.TableListItem, 0)
-			anyTableSelcted = false
+			anyTableSelected = false
 			dbm.ChoosingTables = false
 			var cmd tea.Cmd
 			dbm.DatabasesList, cmd = dbm.DatabasesList.Update(msg)
 			return dbm, tea.Batch(tea.ClearScreen, cmd)
 		case "enter":
-			if anyTableSelcted {
+			if anyTableSelected {
 				dbm.ChoosingTables = false
 				for _, v := range dbm.TablesList.Items() {
 					casted := v.(util.TableListItem)
@@ -319,13 +319,13 @@ func (dbm DbDumpModel) updatePathInputView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (dbm DbDumpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if dbm.ChoosingConnection {
-		return dbm.updateConnChosingView(msg)
+		return dbm.updateConnChoosingView(msg)
 	}
 	if dbm.ChoosingDatabases {
-		return dbm.updateDbChosingView(msg)
+		return dbm.updateDbChoosingView(msg)
 	}
 	if dbm.ChoosingTables {
-		return dbm.updateTableChosingView(msg)
+		return dbm.updateTableChoosingView(msg)
 	}
 
 	if dbm.TypingPath {
