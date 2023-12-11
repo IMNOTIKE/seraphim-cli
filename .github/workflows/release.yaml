@@ -8,10 +8,6 @@ on:
     tags:
       - "*"
 
-defaults:
-  run:
-    working-directory: src
-
 permissions:
   contents: write
   # packages: write
