@@ -11,7 +11,8 @@ builds:
       - CGO_ENABLED=0
     flags:
       - -mod=vendor
-
+archives:
+  - format: binary
 release:
   prerelease: auto
 
