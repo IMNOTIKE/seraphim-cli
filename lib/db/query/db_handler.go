@@ -175,8 +175,8 @@ func CreateDump(selected config.StoredConnection, dumpPath string, selectedDbs [
 	}
 }
 
-func handleCommandForSys(dir string ,command string) bool{
-	
+func handleCommandForSys(dir string, command string) bool {
+
 	switch runtime.GOOS {
 	case "windows":
 		cmd := exec.Command("cmd", "/c", command)

@@ -9,14 +9,14 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/src"
+            "program": "${workspaceFolder}"
         },
         {
             "name": "Launch Dump command",
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/src",
+            "program": "${workspaceFolder}",
             "args": ["db", "dmp"],
             "console": "integratedTerminal"
         },
@@ -25,7 +25,7 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/src",
+            "program": "${workspaceFolder}",
             "args": ["db", "ac"],
             "console": "integratedTerminal"
         },
@@ -34,8 +34,17 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/src",
+            "program": "${workspaceFolder}",
             "args": ["db", "ec"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Launch Init Configuration command",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}",
+            "args": ["cfg", "i"],
             "console": "integratedTerminal"
         }
     ]
