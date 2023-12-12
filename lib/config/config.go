@@ -1,11 +1,18 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/coreybutler/go-fsutil"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
+)
+
+var (
+	pathInputTitleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("230"))
 )
 
 type ConfigOperationResult struct {
@@ -18,11 +25,11 @@ type BrandingConfig struct {
 }
 
 type StoredConnection struct {
-	Host           string `mapstructure:"host"`
-	User           string `mapstructure:"user"`
-	Port           int    `mapstructure:"port"`
-	Password       string `mapstructure:"password"`
-	Provider       string `mapstructure:"provider"`
+	Host            string `mapstructure:"host"`
+	User            string `mapstructure:"user"`
+	Port            int    `mapstructure:"port"`
+	Password        string `mapstructure:"password"`
+	Provider        string `mapstructure:"provider"`
 	DefaultDatabase string `mapstructure:"default_database"`
 }
 
@@ -134,4 +141,89 @@ func EditConnection(conf SeraphimConfig, oldConn StoredConnection, newConn Store
 		Err: nil,
 		Msg: "Successfully edited selected connection",
 	}
+}
+
+func InitConfig() ConfigOperationResult {
+
+	file := viper.ConfigFileUsed()
+
+	if _, err := os.Stat(file); err != nil {
+		return createDefaultConfigFile()
+	} else {
+		return ConfigOperationResult{
+			Err: err,
+			Msg: pathInputTitleStyle.Render("Default configuration file already exist, you can reset it to default values by running\n'seraphim config reset'"),
+		}
+	}
+
+}
+
+func createDefaultConfigFile() ConfigOperationResult {
+
+	homePath, pathErr := os.UserHomeDir()
+	if pathErr != nil {
+		return ConfigOperationResult{
+			Err: pathErr,
+			Msg: "",
+		}
+	}
+
+	content, err := yaml.Marshal(SeraphimConfig{})
+	if err != nil {
+		return ConfigOperationResult{
+			Err: err,
+			Msg: "",
+		}
+	}
+
+	path := fmt.Sprintf("%s/%s/%s", homePath, ".config", "seraphim")
+	mkDirerr := os.MkdirAll(path, os.ModePerm)
+	if mkDirerr != nil {
+		return ConfigOperationResult{
+			Err: mkDirerr,
+			Msg: "",
+		}
+	}
+
+	filePath := fmt.Sprintf("%s/%s", path, "seraphim.yaml")
+	writeError := fsutil.WriteTextFile(filePath, string(content))
+	if writeError != nil {
+		return ConfigOperationResult{
+			Err: err,
+			Msg: "",
+		}
+	} else {
+		return ConfigOperationResult{
+			Err: nil,
+			Msg: pathInputTitleStyle.Render(fmt.Sprintf("Successfully created default configuration file at: %s", filePath)),
+		}
+	}
+
+}
+
+func ResetConfig() ConfigOperationResult {
+
+	configFilePath := viper.ConfigFileUsed()
+
+	content, err := yaml.Marshal(SeraphimConfig{})
+	if err != nil {
+		return ConfigOperationResult{
+			Err: err,
+			Msg: "",
+		}
+	}
+
+	writeError := fsutil.WriteTextFile(configFilePath, string(content))
+	if writeError != nil {
+		return ConfigOperationResult{
+			Err: err,
+			Msg: "",
+		}
+	} else {
+		return ConfigOperationResult{
+			Err: nil,
+			Msg: pathInputTitleStyle.Render("Successfully resetted configuration file to default values"),
+		}
+	}
+
 }

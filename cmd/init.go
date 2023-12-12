@@ -21,7 +21,6 @@ var initCmd = &cobra.Command{
 		} else {
 			fmt.Println(res.Err)
 		}
-
 	},
 }
 
