@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -226,4 +228,48 @@ func ResetConfig() ConfigOperationResult {
 		}
 	}
 
+}
+
+func SaveConfig(conf SeraphimConfig) ConfigOperationResult {
+	
+	file := viper.ConfigFileUsed()
+
+	content, err := yaml.Marshal(conf)
+	if err != nil {
+		return ConfigOperationResult{
+			Err: err,
+			Msg: "",
+		}
+	}
+
+	writeError := fsutil.WriteTextFile(file, string(content))
+	if writeError != nil {
+		return ConfigOperationResult{
+			Err: err,
+			Msg: "",
+		}
+	} else {
+		return ConfigOperationResult{
+			Err: nil,
+			Msg: "Successfully Saved connection",
+		}
+	}
+
+}
+
+func ClearScreen() {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "linux", "darwin":
+		cmd = exec.Command("clear") // Linux or MacOS
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "cls") // Windows
+	default:
+		fmt.Println("Unsupported operating system")
+		return
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }

@@ -46,6 +46,15 @@
             "program": "${workspaceFolder}",
             "args": ["cfg", "i"],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Launch Config edit command",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}",
+            "args": ["cfg", "edit"],
+            "console": "integratedTerminal"
         }
     ]
 }
