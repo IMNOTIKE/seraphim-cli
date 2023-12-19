@@ -14,9 +14,24 @@ require (
 )
 
 require (
+	github.com/alecthomas/chroma v0.10.0 // indirect
+	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/catppuccin/go v0.2.0 // indirect
+	github.com/charmbracelet/glamour v0.6.0 // indirect
+	github.com/dlclark/regexp2 v1.10.0 // indirect
+	github.com/gorilla/css v1.0.0 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.25 // indirect
+	github.com/olekukonko/tablewriter v0.0.5 // indirect
+	github.com/yuin/goldmark v1.6.0 // indirect
+	github.com/yuin/goldmark-emoji v1.0.2 // indirect
+	golang.org/x/net v0.17.0 // indirect
+)
+
+require (
 	github.com/JamesStewy/go-mysqldump v0.2.2
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/charmbracelet/huh v0.2.1
 	github.com/charmbracelet/lipgloss v0.9.1 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/coreybutler/go-fsutil v1.2.1

@@ -12,7 +12,4 @@ vscode:
     - "catppuccin.catppuccin-vsc-icons"
 
 tasks:
-  - command: go install github.com/spf13/cobra-cli@latest
-  - command: go install
-  - command: cls
-  
+  - command: go install github.com/spf13/cobra-cli@latest && exit  
