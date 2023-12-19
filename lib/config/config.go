@@ -144,6 +144,13 @@ func EditConnection(conf SeraphimConfig, oldConn StoredConnection, newConn Store
 	}
 }
 
+func RemoveConfig(conf SeraphimConfig, toRemove []StoredConnection) ConfigOperationResult {
+	return ConfigOperationResult{
+		Err: nil,
+		Msg: "Connection(s) removed successfully",
+	}
+}
+
 func InitConfig() ConfigOperationResult {
 
 	file := viper.ConfigFileUsed()
