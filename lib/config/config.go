@@ -36,7 +36,6 @@ type StoredConnection struct {
 }
 
 type SeraphimConfig struct {
-	Version            string                        `mapstructure:"version"`
 	Branding           BrandingConfig                `mapstructure:"branding"`
 	Stored_Connections []map[string]StoredConnection `mapstructure:"stored_connections"`
 	Default_dump_path  string                        `mapstructure:"default_dump_path"`
@@ -231,7 +230,7 @@ func ResetConfig() ConfigOperationResult {
 }
 
 func SaveConfig(conf SeraphimConfig) ConfigOperationResult {
-	
+
 	file := viper.ConfigFileUsed()
 
 	content, err := yaml.Marshal(conf)

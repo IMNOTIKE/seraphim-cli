@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"seraphim/globals"
 	"seraphim/lib/config"
 
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ var rootCmd = &cobra.Command{
 		fmt.Println("Thank you for using seraphim")
 		if versionRequested {
 			fmt.Printf("\u251C\u279D  App: %s\n", seraphimConfig.Branding.Name)
-			fmt.Printf("\u2514\u279D  Version: %s\n", seraphimConfig.Version)
+			fmt.Printf("\u2514\u279D  Version: %s\n", globals.AppVersion)
 		}
 	},
 }
